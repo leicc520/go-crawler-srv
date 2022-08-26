@@ -1,9 +1,8 @@
 package parse
 
 import (
-	"github.com/antchfx/htmlquery"
-	"github.com/leicc520/go-orm/log"
-	"golang.org/x/net/html"
+	"errors"
+	"fmt"
 )
 
 const (
@@ -18,23 +17,28 @@ const (
 
 //模板节点配置，每个字符模板有类型 允许递归查询节点
 type TempNodeSt struct {
+	Name        string  `json:"name"`
 	Temp 		string  `json:"temp"`
 	CrawlType 	int8 	`json:"crawl_type"`
 	NodeType	int8 	`json:"node_type"`
 }
 
 //执行业务逻辑解析处理逻辑
-func (s TempNodeSt) RunParse(node *html.Node) {
-	switch s.NodeType {
-	case NODE_TYPE_XPATH:
-		if s.CrawlType == CRAWL_TYPE_NODE {
-			htmlquery.InnerText()
-		} else {
-
-		}
-	case NODE_TYPE_REGREP:
-
-	default:
-		log.Write(log.ERROR, "spider node parse node not supportd")
+func (s TempNodeSt) RunParse(p InNodeParser) (result interface{}, err error) {
+	switch s.CrawlType {
+	case CRAWL_TYPE_NODE:
+		return  p.InnerText(s.Temp)
+	case CRAWL_TYPE_LIST:
+		return p.InnerTexts(s.Temp)
 	}
+	return nil, errors.New("Crawler Type Not Support")
+}
+
+//将结果转换成slice
+func convertSlice(result interface{}) []string {
+	if aStr, ok := result.([]string); ok {
+		return aStr
+	}
+	aStr := []string{fmt.Sprintf("%v", result)}
+	return aStr
 }

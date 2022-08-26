@@ -9,6 +9,13 @@ var ErrEmpty = errors.New("Spider Node Not Exists!")
 
 type RegExpParseSt string
 
+//根据提取规格获取数据
+type InNodeParser interface {
+	InnerText(expr string) (text string, err error)
+	InnerTexts(expr string) (texts []string, err error)
+}
+
+
 //获取节点的数据资料信息
 func (s RegExpParseSt) InnerText(expr string) (text string, err error) {
 	var reg *regexp.Regexp
