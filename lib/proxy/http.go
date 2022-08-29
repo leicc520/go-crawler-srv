@@ -3,6 +3,7 @@ package proxy
 import (
 	"bytes"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -266,8 +267,13 @@ func (s *HttpSt) Request(url string, body []byte, method string) (result string,
 	s.sp, err = client.Do(req)
 	if err != nil || s.sp == nil {
 		log.Write(log.ERROR, url, err, string(body))
+		return
 	}
-	return s.readResult() //返回请求回来的数据信息
+	if s.sp.StatusCode == 200 {
+		return s.readResult() //返回请求回来的数据信息
+	} else {
+		return "", errors.New(s.sp.Status)
+	}
 }
 
 //读取解码的数据资料信息
