@@ -13,7 +13,7 @@ type ElementSt struct {
 }
 
 //执行获取匹配的结果数据处理逻辑
-func (s ElementSt) getValue(t *TemplateSt) (value interface{}, err error) {
+func (s ElementSt) getValue(t *CompilerSt) (value interface{}, err error) {
 	var p InNodeParser
 	for _, node := range s.Nodes {
 		p = t.getParser(node.NodeType)
@@ -31,7 +31,7 @@ func (s ElementSt) getValue(t *TemplateSt) (value interface{}, err error) {
 }
 
 //执行业务逻辑解析处理逻辑
-func (s ElementSt) RunParse(t *TemplateSt, result orm.SqlMap) error {
+func (s ElementSt) RunParse(t *CompilerSt, result orm.SqlMap) error {
 	value, err := s.getValue(t)
 	if err != nil {
 		return err
@@ -42,10 +42,13 @@ func (s ElementSt) RunParse(t *TemplateSt, result orm.SqlMap) error {
 		list := make([]orm.SqlMap, 0)
 		for _, doc := range aStr {
 			//在每个匹配节点下接续查找数据
-			t     = &TemplateSt{doc:doc}
+			t     = &CompilerSt{doc:doc}
 			item := orm.SqlMap{}
 			for _, el := range s.Elements {
-				el.RunParse(t, item)
+				err = el.RunParse(t, item)
+				if err != nil {
+					return err
+				}
 			}
 			if len(item) > 0 {
 				list = append(list, item)

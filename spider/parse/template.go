@@ -1,5 +1,10 @@
 package parse
 
+import (
+	"errors"
+	"github.com/leicc520/go-orm"
+)
+
 type TemplateSt struct {
 	Templates []struct{
 		TaskName string 	 `json:"task_name"`  //通过任务名称定位模板
@@ -13,6 +18,44 @@ type CompilerSt struct {
 	XPathParser *XPathParseSt `json:"-"`
 	QueryParser *QueryParseSt `json:"-"`
 	JsonParser  *JsonParseSt `json:"-"`
+}
+
+//获取模板名称数据资料信息
+func (s TemplateSt) getTemplate(taskName string) []ElementSt {
+	if s.Templates == nil || len(s.Templates) < 1 {
+		return nil
+	}
+	for _, temp := range s.Templates {
+		if temp.TaskName == taskName {
+			return temp.Elements
+		}
+	}
+	return nil
+}
+
+//获取生成一个模板编译器
+func NewCompiler(doc string) *CompilerSt {
+	return &CompilerSt{doc: doc}
+}
+
+//模板解析器处理逻辑
+func (s *CompilerSt) Parse(elements []ElementSt) (result orm.SqlMap, err error) {
+	if elements == nil || len(elements) < 1 {
+		err = errors.New("解析器模块元素获取失败")
+		return
+	}
+	parseErr := ParseError{}
+	for _, element := range elements {
+		err = element.RunParse(s, result)
+		if err != nil {
+			parseErr.Wrapped(element.Tag, err)
+		}
+	}
+	//如果数据不为空的情况 直接返回空数据信息
+	if !parseErr.IsEmpty() {
+		err = parseErr
+	}
+	return
 }
 
 //解析模块数据资料信息
