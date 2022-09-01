@@ -3,8 +3,10 @@ package proxy
 import (
 	"bytes"
 	"crypto/tls"
+	"crypto/x509"
 	"errors"
 	"fmt"
+	"golang.org/x/net/http2"
 	"io"
 	"io/ioutil"
 	"mime/multipart"
@@ -27,7 +29,7 @@ type HttpSt struct {
 	isRedirect   bool
 	timeout      time.Duration
 	cookieJar    *cookiejar.Jar
-	tlsTransport *http.Transport
+	tlsTransport http.RoundTripper
 	header       map[string]string
 }
 
@@ -66,12 +68,39 @@ func (s *HttpSt) initHeader(req *http.Request) *HttpSt {
 	if _, ok := s.header["accept"]; !ok { //不存在的话设置一下
 		s.AddHeader("accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9")
 	}
+	if _, ok := s.header["accept-encoding"]; !ok { //不存在的话设置一下
+		s.AddHeader("accept-encoding", "gzip, deflate, br")
+	}
+	if _, ok := s.header["upgrade-insecure-requests"]; !ok { //不存在的话设置一下
+		s.AddHeader("upgrade-insecure-requests", "1")
+	}
+	if _, ok := s.header["sec-fetch-dest"]; !ok { //不存在的话设置一下
+		s.AddHeader("sec-fetch-dest", "document")
+	}
+	if _, ok := s.header["sec-fetch-mode"]; !ok { //不存在的话设置一下
+		s.AddHeader("sec-fetch-mode", "navigate")
+	}
+	if _, ok := s.header["sec-fetch-site"]; !ok { //不存在的话设置一下
+		s.AddHeader("sec-fetch-site", "none")
+	}
+	if _, ok := s.header["sec-fetch-user"]; !ok { //不存在的话设置一下
+		s.AddHeader("sec-fetch-user", "?1")
+	}
+	if _, ok := s.header["accept-language"]; !ok { //不存在的话设置一下
+		s.AddHeader("accept-language", "*")
+	}
 	if _, ok := s.header["referer"]; !ok { //不存在的话设置一下
 		s.AddHeader("referer", baseUrl+"/")
 	}
 	if _, ok := s.header["user-agent"]; !ok { //不存在的话设置一下
 		s.AddHeader("user-agent", RandUserAgent())
 	}
+	return s
+}
+
+//重置浏览器agent数据
+func (s *HttpSt) ResetAgent() *HttpSt {
+	s.AddHeader("user-agent", RandUserAgent())
 	return s
 }
 
@@ -129,6 +158,11 @@ func (s *HttpSt) Set(name, value string) *HttpSt {
 	return s
 }
 
+//获取设置的http请求header数据
+func (s *HttpSt) Header() map[string]string {
+	return s.header
+}
+
 //获取查询的语句数据
 func (s *HttpSt) Query() string {
 	return s.query.Encode()
@@ -147,9 +181,43 @@ func (s *HttpSt) SetTls(keySsl, pemSsl string) *HttpSt {
 	cfg := &tls.Config{
 		Certificates: []tls.Certificate{c},
 	}
-	s.tlsTransport = &http.Transport{
+	s.tlsTransport = http.RoundTripper(&http.Transport{
 		TLSClientConfig: cfg,
+	})
+	return s
+}
+
+//重置请求的参数数据信息
+func (s *HttpSt) SetTlsV2(pemSsl string) *HttpSt {
+	caCert, err := ioutil.ReadFile(pemSsl)
+	if err != nil {
+		log.Write(log.ERROR, "SetTlsV2", err)
+		return s
 	}
+	caCertPool := x509.NewCertPool()
+	caCertPool.AppendCertsFromPEM(caCert)
+	tlsConfig := &tls.Config{
+		RootCAs: caCertPool,
+		InsecureSkipVerify: true,
+	}
+	s.tlsTransport = http.RoundTripper(&http2.Transport{
+		TLSClientConfig: tlsConfig,
+	})
+	return s
+}
+
+//设置启动http代理发起业务请求
+func (s *HttpSt) Proxy(proxyUrl string) *HttpSt {
+	uri, err := url.Parse(proxyUrl)
+	if err != nil {
+		log.Write(log.ERROR, "set proxy error", proxyUrl, err)
+		return s
+	}
+	t := &http.Transport{TLSClientConfig: &tls.Config{
+		InsecureSkipVerify: true,
+	}, TLSNextProto: make(map[string]func(authority string, c *tls.Conn) http.RoundTripper)}
+	t.Proxy = http.ProxyURL(uri)
+	s.tlsTransport = http.RoundTripper(t)
 	return s
 }
 
@@ -222,18 +290,6 @@ func (s *HttpSt) DownLoad(url, filePath string) (string, error) {
 	return filePath, nil
 }
 
-//设置启动http代理发起业务请求
-func (s *HttpSt) Proxy(proxyUrl string) *HttpSt {
-	s.tlsTransport = &http.Transport{TLSClientConfig: &tls.Config{
-		InsecureSkipVerify: true,
-	}, TLSNextProto: make(map[string]func(authority string, c *tls.Conn) http.RoundTripper)}
-	suri, err := url.Parse(proxyUrl)
-	if err == nil { // 使用传入代理
-		s.tlsTransport.Proxy = http.ProxyURL(suri)
-	}
-	return s
-}
-
 //发起一个http业务请求
 func (s *HttpSt) Request(url string, body []byte, method string) (result string, err error) {
 	s.sp = nil
@@ -256,6 +312,7 @@ func (s *HttpSt) Request(url string, body []byte, method string) (result string,
 			req.Header.Set(key, val)
 		}
 	}
+	fmt.Println(req)
 	client := &http.Client{Timeout: s.timeout, Jar: s.cookieJar}
 	if s.tlsTransport != nil { //设置加密请求业务逻辑
 		client.Transport = s.tlsTransport
@@ -269,6 +326,8 @@ func (s *HttpSt) Request(url string, body []byte, method string) (result string,
 		log.Write(log.ERROR, url, err, string(body))
 		return
 	}
+	fmt.Println(s.sp)
+	fmt.Println(req)
 	if s.sp.StatusCode == 200 {
 		return s.readResult() //返回请求回来的数据信息
 	} else {

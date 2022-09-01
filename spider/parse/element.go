@@ -1,28 +1,30 @@
 package parse
 
 import (
+	"github.com/leicc520/go-crawler-srv/lib"
 	"github.com/leicc520/go-orm"
 	"github.com/leicc520/go-orm/log"
 )
 
 //元素节点提取配置，便利模板节点直到知道数据才结束
 type ElementSt struct {
-	Tag   string 		 `json:"tag"` 		//提取之后放到这个名字的map当中
-	Nodes []TempNodeSt 	 `json:"nodes"`     //节点解析的模板配置
-	Elements []ElementSt `json:"elements"`  //允许递归的获取元素，在当前解析节点继续解析
+	Tag   string 		 `json:"tag" yaml:"tag"` 		//提取之后放到这个名字的map当中
+	Nodes []TempNodeSt 	 `json:"nodes" yaml:"nodes"`     //节点解析的模板配置
+	Elements []ElementSt `json:"elements" yaml:"elements"`  //允许递归的获取元素，在当前解析节点继续解析
 }
 
 //执行获取匹配的结果数据处理逻辑
-func (s ElementSt) getValue(t *CompilerSt) (value interface{}, err error) {
-	var p InNodeParser
+func (s ElementSt) getValue(t IFCompiler) (value interface{}, err error) {
+	var p IFNodeParser
 	for _, node := range s.Nodes {
-		p = t.getParser(node.NodeType)
+		p = t.GetParser(node.NodeType)
 		value, err = node.RunParse(p)
 		if err != nil {
 			continue
 		}
-		//匹配结果打印日志
-		log.Write(log.DEBUG, node.Temp, value)
+		summary := lib.CutStr(convertString(value), 64, "...")
+		log.Write(log.DEBUG, node.Temp, summary)
+		break //取到内容了
 	}
 	if err != nil {//节点取值匹配失败的情况
 		log.Write(log.ERROR, "get element value error ", err, t.GetDoc())
@@ -31,7 +33,7 @@ func (s ElementSt) getValue(t *CompilerSt) (value interface{}, err error) {
 }
 
 //执行业务逻辑解析处理逻辑
-func (s ElementSt) RunParse(t *CompilerSt, result orm.SqlMap) error {
+func (s ElementSt) RunParse(t IFCompiler, result orm.SqlMap) error {
 	value, err := s.getValue(t)
 	if err != nil {
 		return err
@@ -42,10 +44,10 @@ func (s ElementSt) RunParse(t *CompilerSt, result orm.SqlMap) error {
 		list := make([]orm.SqlMap, 0)
 		for _, doc := range aStr {
 			//在每个匹配节点下接续查找数据
-			t     = &CompilerSt{doc:doc}
+			newCP:= t.Clone(doc)
 			item := orm.SqlMap{}
 			for _, el := range s.Elements {
-				err = el.RunParse(t, item)
+				err = el.RunParse(newCP, item)
 				if err != nil {
 					return err
 				}

@@ -87,3 +87,17 @@ func NormalizeSpace(s string) string {
 func CeilDivPage(total, numPage int) int {
 	return int(math.Ceil(float64(total) / float64(numPage)))
 }
+
+//字符串截取字段逻辑
+func CutStr(str string, length int, suffix string) string {
+	s := []rune(str)
+	total := len(s)
+	if total <= length {
+		return str
+	}
+	if length < 0 {
+		length = total
+	}
+	result := string(s[0:length])+suffix
+	return result
+}

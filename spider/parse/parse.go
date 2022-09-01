@@ -10,9 +10,17 @@ var ErrEmpty = errors.New("Spider Node Not Exists!")
 type RegExpParseSt string
 
 //根据提取规格获取数据
-type InNodeParser interface {
+type IFNodeParser interface {
 	InnerText(expr string) (text string, err error)
 	InnerTexts(expr string) (texts []string, err error)
+}
+
+//编译器的实现接口类型 解决依赖问题
+type IFCompiler interface {
+	SetDoc(doc string)
+	GetDoc() string
+	Clone(doc string) IFCompiler
+	GetParser(nodeType int8) IFNodeParser
 }
 
 

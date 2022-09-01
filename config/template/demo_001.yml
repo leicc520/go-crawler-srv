@@ -1,0 +1,41 @@
+method: get
+params:
+headers:
+  - key: cache-control
+    value: max-age=0
+  -
+    key: accept-language
+    value: zh-CN,zh;q=0.9
+elements:
+  -
+    tag: title
+    nodes:
+      -
+        name: 标题节点
+        temp: //*[@id="t_41772a550102zami"]
+        crawl_type: 1
+        node_type: 1
+  -
+    tag: content
+    nodes:
+      -
+        name: 内容节点
+        temp: //*[@id="sina_keyword_ad_area2"]/div[2]
+        crawl_type: 1
+        node_type: 1
+  -
+    tag: like
+    nodes:
+      -
+        name: 喜欢节点
+        temp: //*[@id="dbox2_41772a550102zami"]
+        crawl_type: 1
+        node_type: 1
+  -
+    tag: goldpen
+    nodes:
+      -
+        name: 赠金笔
+        temp: //*[@id="goldPan-num"]
+        crawl_type: 1
+        node_type: 1
