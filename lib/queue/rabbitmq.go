@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/leicc520/go-crawler-srv/lib"
 	"github.com/leicc520/go-orm/log"
 	amqp "github.com/rabbitmq/amqp091-go"
 )
@@ -116,7 +115,7 @@ func (s *RabbitMqSt) Consumer(handle QueueCB) error {
 				s.ch.Reject(dMsg.DeliveryTag, true)
 			}
 		}
-		log.Write(log.INFO, s.Queue, " Received a message: ", lib.CutStr(string(dMsg.Body), 127, "..."), err)
+		log.Write(log.INFO, s.Queue, " Received a message: ", dMsg.Body, err)
 	}
 	return err
 }
@@ -157,7 +156,7 @@ func (s *RabbitMqSt) AsyncConsumer(conCurrency int, handle QueueCB) error {
 					s.ch.Reject(dlMsg.DeliveryTag, true)
 				}
 			}
-			log.Write(log.INFO, s.Queue, " Received a message: ", lib.CutStr(string(dlMsg.Body), 127, "..."), err)
+			log.Write(log.INFO, s.Queue, " Received a message: ", dMsg.Body, err)
 		}(dMsg)
 	}
 	return err
