@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -44,6 +45,19 @@ type Statistic struct {
 	Request uint64 //请求的统计数值
 	logChan chan string
 	rds *redis.Client
+}
+
+//获取数据资料信息
+var (
+	StatPtr *Statistic = nil
+	onceInit = sync.Once{}
+)
+
+//初始化数据资料信息
+func Init(proxy []ProxySt, rds *redis.Client) {
+	onceInit.Do(func() {
+		StatPtr = NewStatistic(proxy, rds)
+	})
 }
 
 //格式化成字符串
@@ -132,6 +146,17 @@ func (s *Statistic) syncReset() {
 	}
 }
 
+//获取数据资料信息
+func (s *Statistic) ItemNotify(proxyHost string) string {
+	ckey  := s.redisStatisticKey(proxyHost)
+	cmd   := s.rds.HGetAll(ckey)
+	state := cmd.Val()
+	if state != nil && state["proxy"] != proxyHost {
+		return proxyHost+"404不存在"
+	}
+	return s.formatNotify(state)
+}
+
 //统计格式化统计数据资料信息
 func (s *Statistic) formatNotify(state map[string]string) string {
 	success, _ := strconv.ParseInt(state["success"], 10, 64)
@@ -188,15 +213,20 @@ func (s *Statistic) syncRedis(state map[string]int) {
 }
 
 //上报统计数据资料信息往队列写，然后异步协程同步更新到redis当中
-func (s *Statistic) Report(idx int, req *http.Request, sp *http.Response)  {
+func (s *Statistic) Report(idx int, host string, statusCode int)  {
 	if idx < 0 || idx > len(s.proxy) {//如果没有定位到代理的情况
 		return
 	}
 	log.Write(log.INFO, "代理监控状态通知....")
-	logState := LogStateSt{ProxyIdx: idx, Host: req.Host, Status: sp.StatusCode}
+	logState := LogStateSt{ProxyIdx: idx, Host: host, Status: statusCode}
 	s.logChan <- logState.String()
-	if sp.StatusCode != http.StatusOK {//请求失败的情况
-		atomic.AddUint64(&s.proxy[idx].Error, 1)
+	if statusCode != http.StatusOK {//请求失败的情况
+		n := atomic.AddUint64(&s.proxy[idx].Error, 1)
+		maxLockTime := time.Second*300
+		if PROXY_ERROR_LOCK_TIME * time.Duration(n) > maxLockTime {
+			s.proxy[idx].Expire = time.Now().UnixMilli() + int64(maxLockTime)
+			return //设置最多锁定上线5分钟
+		}
 		if s.proxy[idx].Status == 1 {
 			s.proxy[idx].Expire = time.Now().UnixMilli()
 		}

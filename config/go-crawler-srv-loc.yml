@@ -22,15 +22,16 @@ chrome_dp:
   devtools_ws:
   proxy_url:
 http_proxy:
-  - http://147.185.238.169:50000
-
-spider-service:
+  -
+    proxy: http://147.185.238.169:50000
+    status: 1
+spider_service:
   chrome_dp_con_currency: 10
   spider_con_currency: 10
   job_con_currency: 100
-parser-service:
+parser_service:
   parser_con_currency: 10
   job_con_currency: 100
-dispatcher-service:
+dispatcher_service:
   dispatcher_con_currency: 10
   job_con_currency: 100

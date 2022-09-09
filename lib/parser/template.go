@@ -1,13 +1,14 @@
-package spider
+package parser
 
 import (
-	"github.com/leicc520/go-crawler-srv/lib/proxy"
-	"github.com/leicc520/go-crawler-srv/spider/parse"
-	"github.com/leicc520/go-orm/log"
-	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"os"
 	"strings"
+
+	"github.com/leicc520/go-crawler-srv/lib/parser/parse"
+	"github.com/leicc520/go-crawler-srv/lib/proxy"
+	"github.com/leicc520/go-orm/log"
+	"gopkg.in/yaml.v2"
 )
 
 /*********************************************************************

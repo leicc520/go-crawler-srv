@@ -1,8 +1,9 @@
-package spider
+package parser
 
 import (
 	"errors"
-	"github.com/leicc520/go-crawler-srv/spider/parse"
+
+	"github.com/leicc520/go-crawler-srv/lib/parser/parse"
 	"github.com/leicc520/go-orm"
 )
 

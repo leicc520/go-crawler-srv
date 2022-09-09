@@ -6,7 +6,6 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
-	"golang.org/x/net/http2"
 	"io"
 	"io/ioutil"
 	"mime/multipart"
@@ -19,6 +18,7 @@ import (
 	"time"
 
 	"github.com/leicc520/go-orm/log"
+	"golang.org/x/net/http2"
 )
 
 const CONTENT_TYPE = "content-type"
@@ -28,6 +28,8 @@ type HttpSt struct {
 	query        url.Values
 	isRedirect   bool
 	proxy        string
+	proxyIndex   int   //代理索引
+	isProxy      bool  //是否开启自动代理
 	timeout      time.Duration
 	cookieJar    *cookiejar.Jar
 	tlsTransport http.RoundTripper
@@ -40,7 +42,7 @@ func CancelRedirect(_ *http.Request, _ []*http.Request) error {
 
 func NewHttpRequest() *HttpSt {
 	cookieJar, _ := cookiejar.New(nil)
-	return &HttpSt{query: url.Values{}, isRedirect: true, header: nil,
+	return &HttpSt{query: url.Values{}, isRedirect: true, header: nil, proxyIndex: -1,
 		timeout: 120 * time.Second, cookieJar: cookieJar}
 }
 
@@ -237,6 +239,30 @@ func (s *HttpSt) SetTlsV2(pemSsl string) *HttpSt {
 	return s
 }
 
+//设置是否自动代理处理逻辑
+func (s *HttpSt) IsProxy(isProxy bool) *HttpSt {
+	s.isProxy = isProxy
+	return s
+}
+
+//重置代理处理逻辑 -关闭代理
+func (s *HttpSt) CloseProxy()  {
+	s.proxyIndex, s.proxy = -1, ""
+	s.tlsTransport = nil
+}
+
+//代理池中自动获取代理
+func (s *HttpSt) autoSetProxy()  {
+	//开启了自动代理，且未设置代理的情况
+	if s.isProxy && len(s.proxy) < 1 && StatPtr != nil {
+		s.proxyIndex, s.proxy = StatPtr.Proxy()
+		if s.proxyIndex >= 0 && len(s.proxy) > 0 {
+			s.Proxy(s.proxy)
+			log.Write(log.INFO, "设置代理请求:"+s.proxy)
+		}
+	}
+}
+
 //设置启动http代理发起业务请求
 func (s *HttpSt) Proxy(proxyUrl string) *HttpSt {
 	uri, err := url.Parse(proxyUrl)
@@ -349,6 +375,7 @@ func (s *HttpSt) Request(url string, body []byte, method string) (result string,
 			req.Header.Set(key, val)
 		}
 	}
+	s.autoSetProxy() //判定并设置自动代理
 	client := &http.Client{Timeout: s.timeout, Jar: s.cookieJar}
 	if s.tlsTransport != nil { //设置加密请求业务逻辑
 		client.Transport = s.tlsTransport
@@ -358,13 +385,21 @@ func (s *HttpSt) Request(url string, body []byte, method string) (result string,
 		client.CheckRedirect = CancelRedirect
 	}
 	s.sp, err = client.Do(req)
+	if StatPtr != nil {//如果设置了监控逻辑
+		statusCode := -1
+		if s.sp != nil {
+			statusCode = s.sp.StatusCode
+		}
+		StatPtr.Report(s.proxyIndex, req.Host, statusCode)
+	}
 	if err != nil || s.sp == nil {
 		log.Write(log.ERROR, url, err, string(body))
 		return
 	}
-	if s.sp.StatusCode == 200 {
+	if s.sp.StatusCode == http.StatusOK {
 		return s.readResult() //返回请求回来的数据信息
 	} else {
+		s.CloseProxy() //失败的情况关闭
 		return "", errors.New(s.sp.Status)
 	}
 }

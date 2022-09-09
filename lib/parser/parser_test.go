@@ -1,4 +1,4 @@
-package spider
+package parser
 
 import (
 	"fmt"

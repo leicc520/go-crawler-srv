@@ -1,4 +1,4 @@
-package spider
+package parser
 
 type SpiderTaskSt struct {
 	Link string   `json:"link"`

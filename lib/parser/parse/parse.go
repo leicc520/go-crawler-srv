@@ -5,7 +5,7 @@ import (
 	"regexp"
 )
 
-var ErrEmpty = errors.New("Spider Node Not Exists!")
+var ErrEmpty = errors.New("要解析的节点数据不存在!")
 
 type RegExpParseSt string
 

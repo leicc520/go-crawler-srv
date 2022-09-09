@@ -1,7 +1,9 @@
 package lib
 
 import (
+	"bytes"
 	"crypto/md5"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/leicc520/go-orm/log"
@@ -107,4 +109,18 @@ func CutStr(str string, length int, suffix string) string {
 //获取字符串md5 hash值
 func Md5Str(str string) string {
 	return fmt.Sprintf("%x", md5.Sum([]byte(str)))
+}
+
+//格式化json数据资料信息
+func PrettyJson(v interface{}) string {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return fmt.Sprint("%+v", v)
+	}
+	var out bytes.Buffer
+	err = json.Indent(&out, b, "", "  ")
+	if err != nil {
+		return fmt.Sprint("%+v", v)
+	}
+	return out.String()
 }
