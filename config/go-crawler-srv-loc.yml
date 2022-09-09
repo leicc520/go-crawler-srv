@@ -1,0 +1,36 @@
+app:
+  host: 0.0.0.0:8888
+  name: go-crawler-srv
+  version: v1.0.0
+  upfileDir: ./upfile
+  upfileBase: .
+redis: redis://:@127.0.0.1:6379/1
+logger:
+  prefix: web
+  file: go-crawler-srv
+  dir: ./cachedir/log
+  mask: 4
+aqm_queue:
+  url: amqp://guest:guest@10.100.72.102:5672/
+  queue: spider
+  durable: true
+  auto_ack: false
+  auto_delete: false
+chrome_dp:
+  retry: 3
+  head_less: true
+  devtools_ws:
+  proxy_url:
+http_proxy:
+  - http://147.185.238.169:50000
+
+spider-service:
+  chrome_dp_con_currency: 10
+  spider_con_currency: 10
+  job_con_currency: 100
+parser-service:
+  parser_con_currency: 10
+  job_con_currency: 100
+dispatcher-service:
+  dispatcher_con_currency: 10
+  job_con_currency: 100
