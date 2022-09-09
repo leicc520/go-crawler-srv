@@ -19,6 +19,8 @@ import (
 
 const (
 	PROXY_ERROR_LOCK_TIME = time.Millisecond*100
+	PROXY_SYNC_REDIS_TIME = time.Second*30
+	PROXY_SYNC_NOTIFY_TIME= time.Hour*24
 )
 
 type ProxySt struct {
@@ -52,7 +54,8 @@ func (s LogStateSt) String() string {
 //格式化状态数据资料信息
 func LogStateBuilder(logStr string) *LogStateSt {
 	arrStr := strings.Split(logStr, ";")
-	if len(arrStr) != 2 {
+	if len(arrStr) != 3 {
+		log.Write(log.ERROR, logStr, "代理监控数据异常...")
 		return nil
 	}
 	proxyIdx, _ := strconv.ParseInt(arrStr[0], 10, 64)
@@ -69,7 +72,7 @@ func NewStatistic(proxy []ProxySt, rds *redis.Client) *Statistic {
 }
 
 //当天剩余的时间处理逻辑
-func (s *Statistic) dayLastDuration() time.Duration {
+func (s *Statistic) dayDuration() time.Duration {
 	n := time.Now()
 	l := time.Date(n.Year(), n.Month(), n.Day(), 23, 59, 59, 0, n.Location())
 	t := l.Sub(n)
@@ -79,17 +82,17 @@ func (s *Statistic) dayLastDuration() time.Duration {
 //异步任务通知，格式化存储到数据库
 func (s *Statistic) goAsyncNotify() {
 	state := make(map[string]int)
-	syncChan := time.After(time.Second*30)
-	notifyChan := time.After(s.dayLastDuration())
+	syncChan   := time.After(PROXY_SYNC_REDIS_TIME)
+	notifyChan := time.After(s.dayDuration())
 	for {
 		//接收请求处理逻辑
 		select {
-			case logStr, isClose := <-s.logChan:
-				if isClose {//句柄广告异常关闭了退出
+			case logStr, ok := <-s.logChan:
+				if !ok {//句柄广告异常关闭了退出
 					log.Write(-1, "async proxy monitor exit!")
 					return
 				}
-				if _, ok := state[logStr]; !ok {
+				if _, ok = state[logStr]; !ok {
 					state[logStr]  = 1
 				} else {
 					state[logStr] += 1
@@ -98,12 +101,13 @@ func (s *Statistic) goAsyncNotify() {
 				if len(state) > 256 {
 					s.syncRedis(state)
 				}
+				log.Write(log.INFO, "完成代理状态收集...")
 			case <-syncChan:
 				s.syncRedis(state) //做一个定期同步处理逻辑
-				syncChan = time.After(time.Second*30)
+				syncChan = time.After(PROXY_SYNC_REDIS_TIME)
 			case <-notifyChan:
 				s.syncReset() //将redis数据清理并生产汇总报表
-				notifyChan = time.After(time.Hour*24)
+				notifyChan = time.After(PROXY_SYNC_NOTIFY_TIME)
 		}
 	}
 }
@@ -158,7 +162,7 @@ func (s Statistic) redisStatisticKey(proxy string) string {
 
 //将数据迁移到redis当中的处理逻辑
 func (s *Statistic) syncRedis(state map[string]int) {
-	if s.rds != nil {//数据为空的情况
+	if s.rds == nil {//数据为空的情况
 		return
 	}
 	for logStr, nSize := range state {
@@ -185,9 +189,10 @@ func (s *Statistic) syncRedis(state map[string]int) {
 
 //上报统计数据资料信息往队列写，然后异步协程同步更新到redis当中
 func (s *Statistic) Report(idx int, req *http.Request, sp *http.Response)  {
-	if idx == -1 {//如果没有定位到代理的情况
+	if idx < 0 || idx > len(s.proxy) {//如果没有定位到代理的情况
 		return
 	}
+	log.Write(log.INFO, "代理监控状态通知....")
 	logState := LogStateSt{ProxyIdx: idx, Host: req.Host, Status: sp.StatusCode}
 	s.logChan <- logState.String()
 	if sp.StatusCode != http.StatusOK {//请求失败的情况
@@ -207,17 +212,15 @@ func (s *Statistic) Report(idx int, req *http.Request, sp *http.Response)  {
 func (s *Statistic) Proxy() (int, string) {
 	n := atomic.AddUint64(&s.Request, 1)
 	for i := 0; i < s.len; i++ {
-		item := &s.proxy[(n+uint64(i))%uint64(s.len)]
+		idx  := int((n+uint64(i))%uint64(s.len))
+		item := &s.proxy[idx]
 		//状态正常 且解锁的状态 直接处理逻辑即可
 		if item.Status == 1 {
-			return i, item.Proxy
+			return idx, item.Proxy
 		} else if item.Status == 2 && item.Expire < time.Now().UnixMilli() {
 			item.Status = 1
-			return i, item.Proxy
+			return idx, item.Proxy
 		}
 	}
 	return -1, ""
 }
-
-
-
