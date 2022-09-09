@@ -27,6 +27,7 @@ type HttpSt struct {
 	sp           *http.Response
 	query        url.Values
 	isRedirect   bool
+	proxy        string
 	timeout      time.Duration
 	cookieJar    *cookiejar.Jar
 	tlsTransport http.RoundTripper
@@ -93,14 +94,14 @@ func (s *HttpSt) initHeader(req *http.Request) *HttpSt {
 		s.AddHeader("referer", baseUrl+"/")
 	}
 	if _, ok := s.header["user-agent"]; !ok { //不存在的话设置一下
-		s.AddHeader("user-agent", RandUserAgent())
+		s.AddHeader("user-agent", UserAgent())
 	}
 	return s
 }
 
 //重置浏览器agent数据
 func (s *HttpSt) ResetAgent() *HttpSt {
-	s.AddHeader("user-agent", RandUserAgent())
+	s.AddHeader("user-agent", UserAgent())
 	return s
 }
 
@@ -134,6 +135,36 @@ func (s *HttpSt) AddHeader(key, val string) *HttpSt {
 	}
 	s.header[key] = val
 	return s
+}
+
+//设置请求的header业务数据信息
+func (s *HttpSt) DelHeader(header map[string]string) *HttpSt {
+	if s.header != nil {
+		for key, _ := range header {
+			if _, ok := s.header[key]; ok {
+				delete(s.header, key)
+			}
+		}
+	}
+	return s
+}
+
+//装入cookie数据资料信息
+func (s *HttpSt) SetCookie(rawUrl, cookieStr string)  {
+	u, _   := url.Parse(rawUrl)
+	cookie := make([]*http.Cookie, 0)
+	astr   := strings.Split(cookieStr, ";")
+	for _, str := range astr {
+		str     = strings.TrimSpace(str)
+		if len(str) < 1 {
+			continue
+		}
+		value := strings.Split(str, "=")
+		if len(value) == 2 {
+			cookie = append(cookie, &http.Cookie{Name: value[0], Value: value[1], Domain: "."+u.Host, Path: "/", Expires: time.Now().Add(time.Hour)})
+		}
+	}
+	s.cookieJar.SetCookies(u, cookie)
 }
 
 //设置发起json的业务请求json,xml,default
@@ -213,12 +244,18 @@ func (s *HttpSt) Proxy(proxyUrl string) *HttpSt {
 		log.Write(log.ERROR, "set proxy error", proxyUrl, err)
 		return s
 	}
+	s.proxy = proxyUrl
 	t := &http.Transport{TLSClientConfig: &tls.Config{
 		InsecureSkipVerify: true,
 	}, TLSNextProto: make(map[string]func(authority string, c *tls.Conn) http.RoundTripper)}
 	t.Proxy = http.ProxyURL(uri)
 	s.tlsTransport = http.RoundTripper(t)
 	return s
+}
+
+//获取代理数据资料信息
+func (s *HttpSt) GetProxy() string {
+	return s.proxy
 }
 
 //上传文件处理逻辑 封装成byte
@@ -312,7 +349,6 @@ func (s *HttpSt) Request(url string, body []byte, method string) (result string,
 			req.Header.Set(key, val)
 		}
 	}
-	fmt.Println(req)
 	client := &http.Client{Timeout: s.timeout, Jar: s.cookieJar}
 	if s.tlsTransport != nil { //设置加密请求业务逻辑
 		client.Transport = s.tlsTransport
@@ -326,8 +362,6 @@ func (s *HttpSt) Request(url string, body []byte, method string) (result string,
 		log.Write(log.ERROR, url, err, string(body))
 		return
 	}
-	fmt.Println(s.sp)
-	fmt.Println(req)
 	if s.sp.StatusCode == 200 {
 		return s.readResult() //返回请求回来的数据信息
 	} else {

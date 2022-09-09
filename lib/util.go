@@ -1,7 +1,9 @@
 package lib
 
 import (
+	"crypto/md5"
 	"errors"
+	"fmt"
 	"github.com/leicc520/go-orm/log"
 	"io/ioutil"
 	"math"
@@ -100,4 +102,9 @@ func CutStr(str string, length int, suffix string) string {
 	}
 	result := string(s[0:length])+suffix
 	return result
+}
+
+//获取字符串md5 hash值
+func Md5Str(str string) string {
+	return fmt.Sprintf("%x", md5.Sum([]byte(str)))
 }
