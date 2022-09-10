@@ -224,11 +224,11 @@ func (s *Statistic) Report(idx int, host string, statusCode int)  {
 		n := atomic.AddUint64(&s.proxy[idx].Error, 1)
 		maxLockTime := time.Second*300
 		if PROXY_ERROR_LOCK_TIME * time.Duration(n) > maxLockTime {
-			s.proxy[idx].Expire = time.Now().UnixMilli() + int64(maxLockTime)
+			s.proxy[idx].Expire = time.Now().UnixNano() + int64(maxLockTime)
 			return //设置最多锁定上线5分钟
 		}
 		if s.proxy[idx].Status == 1 {
-			s.proxy[idx].Expire = time.Now().UnixMilli()
+			s.proxy[idx].Expire = time.Now().UnixNano()
 		}
 		s.proxy[idx].Status  = 2
 		s.proxy[idx].Expire += int64(PROXY_ERROR_LOCK_TIME)
@@ -247,7 +247,7 @@ func (s *Statistic) Proxy() (int, string) {
 		//状态正常 且解锁的状态 直接处理逻辑即可
 		if item.Status == 1 {
 			return idx, item.Proxy
-		} else if item.Status == 2 && item.Expire < time.Now().UnixMilli() {
+		} else if item.Status == 2 && item.Expire < time.Now().UnixNano() {
 			item.Status = 1
 			return idx, item.Proxy
 		}

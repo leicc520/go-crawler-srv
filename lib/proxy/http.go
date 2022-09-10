@@ -102,9 +102,10 @@ func (s *HttpSt) initHeader(req *http.Request) *HttpSt {
 }
 
 //重置浏览器agent数据
-func (s *HttpSt) ResetAgent() *HttpSt {
-	s.AddHeader("user-agent", UserAgent())
-	return s
+func (s *HttpSt) ResetAgent() string {
+	agent := UserAgent()
+	s.AddHeader("user-agent", agent)
+	return agent
 }
 
 //设置是否重定向处理逻辑,默认true
