@@ -37,6 +37,7 @@ type Response struct {
 		MaxScore int           `json:"maxScore"`
 	} `json:"response"`
 	Qi           string `json:"qi"`
+	Qk           string `json:"qk"`
 	Highlighting struct {
 	} `json:"highlighting"`
 	FacetCounts struct {

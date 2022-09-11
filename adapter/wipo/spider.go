@@ -3,16 +3,19 @@ package wipo
 import (
 	"encoding/json"
 	"errors"
-	LZString "github.com/Lazarus/lz-string-go"
-	"github.com/leicc520/go-crawler-srv/lib/proxy"
-	"github.com/leicc520/go-orm"
-	"github.com/leicc520/go-orm/log"
+	"fmt"
 	"math"
 	"net/http"
+	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
+	
+	LZString "github.com/Lazarus/lz-string-go"
+	"github.com/leicc520/go-crawler-srv/lib/proxy"
+	"github.com/leicc520/go-orm"
+	"github.com/leicc520/go-orm/log"
 )
 
 const (
@@ -30,6 +33,7 @@ type WipoSt struct {
 	IndexDate time.Time     `json:"index_date"`
 	Qi        string        `json:"qi"`
 	Qk        string        `json:"qk"`
+	OpRequest int           `json:"op_request"`
 	qz        Request       `json:"-"`
 	client   *proxy.HttpSt  `json:"-"`
 }
@@ -40,6 +44,7 @@ func (s *WipoSt) init()  {
 	agent := s.client.ResetAgent() //浏览器头信息
 	s.qz = Request{Type: "brand", La: "en", Queue: 1, Field6: "11932", P: PSt{Rows: wipoPageSize, Start: 0}}
 	s.stepInitCookie(agent)
+	s.stepInitSelect() //设置操作
 }
 
 //循环请求，直到成功为止，失败的话休眠最多1分钟
@@ -95,15 +100,37 @@ func (s *WipoSt) stepInitCookie(agent string) error  {
 	return nil
 }
 
+//初始化设置操作处理逻辑
+func (s *WipoSt) stepInitSelect() {
+	link   := wipoBaseURL + "/branddb/jsp/select.jsp"
+	query  := url.Values{}
+	query.Set("type", "brand")
+	query.Set("q", "ID:TIME")
+	s.OpRequest += 1
+	query.Set("qi", fmt.Sprintf("%d-%s", s.OpRequest, s.Qk))
+	header := map[string]string{"x-requested-with":"XMLHttpRequest", "referer":wipoBaseURL+"/branddb/en/"}
+	s.client.SetHeader(header)
+	link   += "?"+query.Encode()
+	result, err := s.client.Request(link, nil, http.MethodGet)
+	s.client.DelHeader(header)
+	if err != nil { //请求失败的情况
+		log.Write(-1, err)
+	}
+	log.Write(log.INFO, "初始化设置操作", result)
+}
+
 //请求获取数据资料信息
 func (s *WipoSt) selectData() (*Response, error) {
 	qzStr  := s.genSelectQZParams()
 	link   := wipoBaseURL + "/branddb/jsp/select.jsp"
-	body   := []byte("qz="+qzStr)
+	query  := url.Values{}
+	query.Set("qz", qzStr)
+	body   := []byte(query.Encode())
 	header := map[string]string{"x-requested-with":"XMLHttpRequest", "accept":"application/json, text/javascript, */*; q=0.01",
 		"content-type":"application/x-www-form-urlencoded; charset=UTF-8", "referer":wipoBaseURL+"/branddb/en/",
 		"content-length":strconv.FormatInt(int64(len(body)), 10)}
 	s.client.SetHeader(header)
+	//time.Sleep(time.Second*6) //休眠时间，不休眠的话会500
 	result, err := s.client.Request(link, body, http.MethodPost)
 	s.client.DelHeader(header)
 	if err != nil { //请求失败的情况
@@ -116,6 +143,16 @@ func (s *WipoSt) selectData() (*Response, error) {
 	}
 	//解析请求，复制到下一个请求的处理逻辑
 	s.Qi = sp.Qi //向上取整，返回页数
+	if len(sp.Qk) > 0 && len(sp.Qi) > 0 {
+		s.Qk = sp.Qk
+		arrStr := strings.Split(sp.Qi, "=")
+		if len(arrStr) > 1 {//获取qi的另外一种方式
+			idx, err := strconv.ParseInt(arrStr[0], 10, 64)
+			if err == nil && idx >= 0 {
+				s.Qi= fmt.Sprintf("%d-%s", idx, sp.Qk)
+			}
+		}
+	}
 	s.TotalPage = int(math.Ceil(float64(sp.Response.NumFound) / float64(wipoPageSize)))
 	s.IndexPage+= 1
 	return &sp, nil
