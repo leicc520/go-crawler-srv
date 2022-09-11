@@ -204,8 +204,9 @@ func (s *HttpSt) Query() string {
 
 //重置请求的参数数据信息
 func (s *HttpSt) Reset() *HttpSt {
-	s.query = url.Values{}
-	s.header = nil
+	s.query        = url.Values{}
+	s.header       = nil
+	s.cookieJar, _ = cookiejar.New(nil)
 	return s
 }
 

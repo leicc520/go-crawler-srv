@@ -1,8 +1,10 @@
 package wipo
 
 import (
+	"encoding/json"
 	"fmt"
 	"testing"
+	"time"
 )
 import "github.com/Lazarus/lz-string-go"
 
@@ -23,7 +25,10 @@ func TestEncrypt(t *testing.T) {
 	res, err = LZString.Decompress(str, "")
 	fmt.Println(res, err)
 	
-	str = "N4IgLgngDgpiBcIBGAnAhgOwCYgDQgBs0EQYM8QBHASxIAYBaAUQFUARagKQGkBhADwDOAKwBawqAEEASgEYAZgHtZAFQCa/AOoAZFAFYAxqLQAmAMwwoACQDUbGwBZFKgQA4AvBUoBXGL4Sy+AD6JLKyAJxmJiAAvkAAA=="
+	str = "N4IgDiBcoM4KYEMBOBjAFlWBHKBtUALnFCLgEwAMZZAtBQJx30AqFFkbHFAWgATMB5XpWpMmzMgGZIAVnqz63ALogANCABmASxIAlACJqQAEwIkRtBkxABfJTZvqCATzDFIIAEZIEAO2NGADYIJHC+Rlg6HpI0ABKSMs4AygBuAFYAGgCyANT6MCgAqgAeAKIArvSFAtwAagDWcAAsBABSKADCGQBsCACM9ADsta0ACgD2reXMhQC8EeVwi1B96gD6JH0DkmS2QAAA=="
+	res, err = LZString.Decompress(str, "")
+	fmt.Println(res, err)
+	str = "N4IgDiBcoM4KYEMBOBjAFlWBHKBtUALnFCLgEwAMZZAtBQJx30AqFFkbHFAWgATMB5XpWpMmzMgGZIAVnqz63ALogANCABmASxIAlACJqQAEwIkRtBkxABfJTfVIA9gHcYUAGwV1MAsjMcDiAEAJ5gxJAgAEZICAB2xkYANggkcHFGWDqRFDQA6loAqgBCIQCMhQBiAJIyALJYCAASIQCaAOwuSAAKcBQAigCuAHL9lZIaMACCANb6AOZ51QiVABxxaAAsqwC8mYNwB1Bl6gD6JGVl9JJktkA==="
 	res, err = LZString.Decompress(str, "")
 	fmt.Println(res, err)
 }
@@ -41,4 +46,20 @@ qk = "U+dA1Ga0wy825xWj9w5cJixmSwAZPUXwMq9k5KdjR0Q=";`
 func TestCookie(t *testing.T) {
 	str := "demotest"
 	fmt.Println(wipoVisitorUunId(str))
+}
+
+func TestDate(t *testing.T) {
+	ss := time.Now()
+	body, err := json.Marshal(ss)
+	
+	fmt.Println(string(body), err)
+	
+	bb := time.Time{}
+	err = json.Unmarshal(body, &bb)
+	fmt.Println(err, bb)
+}
+
+func TestWipo(t *testing.T) {
+	ss := &WipoSt{}
+	ss.Run("2022-09-09", "2022-09-12")
 }
