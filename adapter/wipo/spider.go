@@ -51,7 +51,7 @@ func (s *WipoSt) init()  {
 	var err error = nil
 	s.client = proxy.NewHttpRequest().IsProxy(true)
 	//半小时重新生产一次 浏览器头信息
-	if s.dcpSp == nil || (time.Now().Unix() - s.dcpSp.Stime) > 3600 {
+	if s.dcpSp == nil || (time.Now().Unix() - s.dcpSp.Stime) > 86400 {
 		for {
 			s.dcpSp, err = s.chromeDpCookie()
 			if err == nil {
@@ -75,10 +75,10 @@ func (s *WipoSt) chromeDpCookie() (*AgentCookieSt, error) {
 	s.dpc.ProxyUrl = proxy.GetStatistic().GetProxy(true, true)
 	url := wipoBaseURL+"/branddb/en/#"
 	sp  := &AgentCookieSt{}
-	cookieStr, htmlDoc := make([]string, 0), ""
+	cookieStr, htmlDoc, dialog := make([]string, 0), "", ""
 
 	cbHandle  := func(url string, ctx context.Context) (string, error) {
-		goCtx, goCancel := context.WithTimeout(ctx, time.Second*90)
+		goCtx, goCancel := context.WithTimeout(ctx, time.Second*30)
 		defer goCancel()
 		err := chromedp.Run(goCtx, chromedp.Tasks{
 			chromedp.Navigate(url),
@@ -93,7 +93,16 @@ func (s *WipoSt) chromeDpCookie() (*AgentCookieSt, error) {
 			chromedp.Sleep(time.Duration(rand.Intn(3))*time.Second),
 			chromedp.Click("//*[@id=\"results\"]/div[1]/div[2]/div[2]/span/div[2]/ul"),
 			chromedp.Sleep(1 * time.Second),
-			chromedp.Click("//*[@id=\"results\"]/div[1]/div[2]/div[2]/span/div[2]/ul/li/ul/li[3]/a"),
+			//start 设置分页60条一页的处理逻辑
+			chromedp.WaitVisible(`//div[@class="results_navigation bottom_results_navigation displayButtons"]`),
+			chromedp.SetAttributeValue(`//div[@id="results"]/div[@class="results_navigation top_results_navigation displayButtons"]`, "class", "results_navigation top_results_navigation displayButtons hover"),
+			chromedp.SetAttributeValue(`//div[@class="rowCountSelectContainer"]/ul[@class="sf-menu sf-js-enabled sf-shadow"]/li[@class="current roundedMenu"]`, "class", "current roundedMenu sfHover"),
+			chromedp.SetAttributeValue(`//div[@class="rowCountSelectContainer"]//ul[@class="narrow"]`, "style", "display:block;visibility:visible;"),
+			chromedp.Sleep(1 * time.Second),
+			chromedp.Click(`//*[@id="results"]/div[1]/div[2]/div[2]/span/div[2]/ul/li/ul/li[3]`),
+			chromedp.Sleep(time.Duration((rand.Intn(5) + rand.Intn(5)) * 1000 * 1000 * 1000)),
+			chromedp.EvaluateAsDevTools(`document.querySelector("#wipo-int > div.ui-dialog.ui-widget.ui-widget-content.ui-corner-all.ui-front.ui-dialog-buttons.ui-draggable.ui-resizable")`, &dialog),
+			//end
 			chromedp.Sleep(1 * time.Second*3),
 			chromedp.OuterHTML("html", &htmlDoc),
 			chromedp.ActionFunc(func(ctx context.Context) error {
