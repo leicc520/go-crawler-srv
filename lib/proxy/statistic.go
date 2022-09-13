@@ -10,6 +10,7 @@ import (
 	"sync/atomic"
 	"time"
 
+    "github.com/leicc520/go-crawler-srv/lib/proxy/channal"
 	"github.com/go-redis/redis"
 	"github.com/leicc520/go-orm/log"
 )
@@ -22,13 +23,27 @@ const (
 	PROXY_ERROR_LOCK_TIME = time.Millisecond*100
 	PROXY_SYNC_REDIS_TIME = time.Second*30
 	PROXY_SYNC_NOTIFY_TIME= time.Hour*24
+	PROXY_ERROR_LIMIT     = 30 //连续错误30次切换ip
 )
 
 type ProxySt struct {
-	Proxy  string  `yaml:"proxy"  json:"proxy"`
+	Proxy  string  `yaml:"proxy"  json:"proxy"`  //代理名称
+	Url    string  `yaml:"url"    json:"url"`       //代理请求地址
 	Status int8    `yaml:"status" json:"status"` //状态0-禁用 1-正常 2-锁定
-	Error  uint64  `yaml:"-"  json:"-"`   //请求失败的统计
+	IsTcp  bool    `yaml:"-" json:"-"`			 //是否tcp代理
+	Error  uint64  `yaml:"-"      json:"-"`      //请求失败的统计
+	IFGet  channal.IFProxy   `yaml:"-"  json:"-"` //代理请求获取地址
 	Expire int64   `yaml:"-" json:"-"` //锁定时间
+}
+
+//自动切换代理处理逻辑
+func (s *ProxySt) CutProxy()  {
+	ipAddress := s.IFGet.GetProxy(channal.PROXY_SOCK5)
+	if len(ipAddress) > 0 {//请求失败很多更好地址
+		s.Url = "http://"+ipAddress
+	}
+	s.IsTcp = true
+	log.Write(-1, "自动切换IP", ipAddress)
 }
 
 //记录日志的状态 统计记录
@@ -49,15 +64,35 @@ type Statistic struct {
 
 //获取数据资料信息
 var (
-	StatPtr *Statistic = nil
+	statPtr *Statistic = nil
 	onceInit = sync.Once{}
 )
 
 //初始化数据资料信息
 func Init(proxy []ProxySt, rds *redis.Client) {
 	onceInit.Do(func() {
-		StatPtr = NewStatistic(proxy, rds)
+		statPtr = NewStatistic(proxy, rds)
 	})
+}
+
+//返回统计数据资料信息
+func GetStatistic() *Statistic {
+	return statPtr
+}
+
+//获取代理地址
+func (s *Statistic) GetProxy(isTcp, isCut bool) string {
+	nlen := len(s.proxy)
+	for i := 0; i < nlen; i++ {
+		item := &s.proxy[i]
+		if (len(item.Url) < 1 || isCut) && item.IFGet != nil {
+			item.CutProxy() //切换代理
+		}
+		if isTcp == item.IsTcp {
+			return item.Url
+		}
+	}
+	return ""
 }
 
 //格式化成字符串
@@ -227,6 +262,10 @@ func (s *Statistic) Report(idx int, host string, statusCode int)  {
 			s.proxy[idx].Expire = time.Now().UnixNano() + int64(maxLockTime)
 			return //设置最多锁定上线5分钟
 		}
+		if n > PROXY_ERROR_LIMIT && s.proxy[idx].IFGet != nil {
+			(&s.proxy[idx]).CutProxy() //自动切换ip
+			return
+		}
 		if s.proxy[idx].Status == 1 {
 			s.proxy[idx].Expire = time.Now().UnixNano()
 		}
@@ -244,12 +283,15 @@ func (s *Statistic) Proxy() (int, string) {
 	for i := 0; i < s.len; i++ {
 		idx  := int((n+uint64(i))%uint64(s.len))
 		item := &s.proxy[idx]
+		if item.IFGet != nil && len(item.Url) < 1 {
+			item.CutProxy() //切代理
+		}
 		//状态正常 且解锁的状态 直接处理逻辑即可
 		if item.Status == 1 {
-			return idx, item.Proxy
+			return idx, item.Url
 		} else if item.Status == 2 && item.Expire < time.Now().UnixNano() {
 			item.Status = 1
-			return idx, item.Proxy
+			return idx, item.Url
 		}
 	}
 	return -1, ""

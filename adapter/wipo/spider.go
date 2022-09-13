@@ -26,7 +26,7 @@ import (
 const (
 	wipoBaseURL = "https://branddb.wipo.int"
 	wipoEndDate = "2022-09-12"
-	wipo7Days   = time.Hour*24*7
+	wipo7Days   = time.Hour*24*2
 	wipoPageSize= 60
 )
 
@@ -48,10 +48,19 @@ type WipoSt struct {
 
 //初始化处理流程
 func (s *WipoSt) init()  {
+	var err error = nil
 	s.client = proxy.NewHttpRequest().IsProxy(true)
 	//半小时重新生产一次 浏览器头信息
-	if s.dcpSp == nil || (time.Now().Unix() - s.dcpSp.Stime) > 180 {
-		s.dcpSp = s.chromeDpCookie()
+	if s.dcpSp == nil || (time.Now().Unix() - s.dcpSp.Stime) > 3600 {
+		for {
+			s.dcpSp, err = s.chromeDpCookie()
+			if err == nil {
+				log.Write(-1, "模拟操作OK啦！")
+				break
+			}
+			//休眠1秒钟
+			time.Sleep(time.Second)
+		}
 	}
 	s.qz = Request{Type: "brand", La: "en", Queue: 1, Field6: "11932", P: PSt{Rows: wipoPageSize, Start: 0}}
 	s.client.SetCookie(wipoBaseURL+"/", s.dcpSp.Cookie)
@@ -61,22 +70,32 @@ func (s *WipoSt) init()  {
 }
 
 //生成chromeDpCookie信息
-func (s *WipoSt) chromeDpCookie() *AgentCookieSt {
+func (s *WipoSt) chromeDpCookie() (*AgentCookieSt, error) {
+	//切换代理的处理逻辑
+	s.dpc.ProxyUrl = proxy.GetStatistic().GetProxy(true, true)
 	url := wipoBaseURL+"/branddb/en/#"
 	sp  := &AgentCookieSt{}
-	cookieStr := make([]string, 0)
+	cookieStr, htmlDoc := make([]string, 0), ""
+
 	cbHandle  := func(url string, ctx context.Context) (string, error) {
-		err := chromedp.Run(ctx, chromedp.Tasks{
+		goCtx, goCancel := context.WithTimeout(ctx, time.Second*90)
+		defer goCancel()
+		err := chromedp.Run(goCtx, chromedp.Tasks{
 			chromedp.Navigate(url),
 			chromedp.WaitVisible(`#results > div.results_navigation.top_results_navigation.displayButtons > div.results_pager.ui-widget-content > div.rowCountContainer.lightBackground`),
-			chromedp.Sleep(time.Duration(rand.Intn(3) * 1000 * 1000 * 1000)),
+			chromedp.Sleep(time.Duration(rand.Intn(3))*time.Second),
 			chromedp.Click("#results > div.results_navigation.top_results_navigation.displayButtons > div.results_pager.ui-widget-content > div.rowCountContainer.lightBackground > span > a"),
-			chromedp.Sleep(time.Duration(rand.Intn(3) * 1000 * 1000 * 1000)),
+			chromedp.Sleep(time.Duration(rand.Intn(3))*time.Second),
 			chromedp.WaitVisible(`#wipo-int > div.ui-dialog.ui-widget.ui-widget-content.ui-corner-all.ui-front.noClose.ui-dialog-buttons.ui-draggable`),
-			chromedp.Sleep(time.Duration(rand.Intn(3) * 1000 * 1000 * 1000)),
+			chromedp.Sleep(time.Duration(rand.Intn(3))*time.Second),
 			chromedp.Click(`#colchooser_gridForsearch_pane > div > div > div.available > div > a`),
 			chromedp.Click(`#wipo-int > div.ui-dialog.ui-widget.ui-widget-content.ui-corner-all.ui-front.noClose.ui-dialog-buttons.ui-draggable > div.ui-dialog-buttonpane.ui-widget-content.ui-helper-clearfix > div > button:nth-child(1)`),
-			chromedp.Sleep(time.Duration(rand.Intn(3) * 1000 * 1000 * 1000)),
+			chromedp.Sleep(time.Duration(rand.Intn(3))*time.Second),
+			chromedp.Click("//*[@id=\"results\"]/div[1]/div[2]/div[2]/span/div[2]/ul"),
+			chromedp.Sleep(1 * time.Second),
+			chromedp.Click("//*[@id=\"results\"]/div[1]/div[2]/div[2]/span/div[2]/ul/li/ul/li[3]/a"),
+			chromedp.Sleep(1 * time.Second*3),
+			chromedp.OuterHTML("html", &htmlDoc),
 			chromedp.ActionFunc(func(ctx context.Context) error {
 				cookies, err := network.GetAllCookies().Do(ctx)
 				if err != nil {
@@ -97,15 +116,19 @@ func (s *WipoSt) chromeDpCookie() *AgentCookieSt {
 		if err != nil {
 			log.Write(-1, "chromedp error", err)
 		}
-		return "", nil
+		return "", err
 	}
-	_, err:= s.dpc.Run(url, cbHandle) //运行数据资料信息
+	html, err:= s.dpc.Run(url, cbHandle) //运行数据资料信息
 	if err != nil {
 		log.Write(-1, "生成的cookie错误",  err)
 	}
+	if err != nil || strings.Contains(html, "Access Denied") {
+		return nil, err
+	}
 	sp.Agent, sp.Cookie, sp.Stime = s.dpc.Agent, strings.Join(cookieStr, ";"), time.Now().Unix()
-	log.Write(-1, "生成的cookie信息", sp.Agent, sp.EC75, sp.Cookie)
-	return sp
+	log.Write(-1, "生成的cookie信息", sp.Agent, sp.EC75)
+	log.Write(-1,  sp.Cookie)
+	return sp, nil
 }
 
 //初始化处理逻辑业务

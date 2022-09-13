@@ -256,8 +256,8 @@ func (s *HttpSt) CloseProxy()  {
 //代理池中自动获取代理
 func (s *HttpSt) autoSetProxy()  {
 	//开启了自动代理，且未设置代理的情况
-	if s.isProxy && len(s.proxy) < 1 && StatPtr != nil {
-		s.proxyIndex, s.proxy = StatPtr.Proxy()
+	if s.isProxy && len(s.proxy) < 1 && statPtr != nil {
+		s.proxyIndex, s.proxy = statPtr.Proxy()
 		if s.proxyIndex >= 0 && len(s.proxy) > 0 {
 			s.Proxy(s.proxy)
 			log.Write(log.INFO, "设置代理请求:"+s.proxy)
@@ -387,12 +387,12 @@ func (s *HttpSt) Request(url string, body []byte, method string) (result string,
 		client.CheckRedirect = CancelRedirect
 	}
 	s.sp, err = client.Do(req)
-	if StatPtr != nil {//如果设置了监控逻辑
+	if statPtr != nil {//如果设置了监控逻辑
 		statusCode := -1
 		if s.sp != nil {
 			statusCode = s.sp.StatusCode
 		}
-		StatPtr.Report(s.proxyIndex, req.Host, statusCode)
+		statPtr.Report(s.proxyIndex, req.Host, statusCode)
 	}
 	if err != nil || s.sp == nil {
 		s.CloseProxy() //失败的情况关闭

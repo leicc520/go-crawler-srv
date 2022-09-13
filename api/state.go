@@ -15,12 +15,13 @@ func proxyState(c *gin.Context)  {
 		return
 	}
 	//为开启代理监控
-	if proxy.StatPtr == nil || len(lib.Config.HttpProxy) < 1 {
+	ss := proxy.GetStatistic()
+	if ss == nil || len(lib.Config.HttpProxy) < 1 {
 		core.PanicHttpError(401, "未开启代理监控.")
 	}
 	arrState := make([]string, 0)
 	for _, item := range lib.Config.HttpProxy {
-		arrState = append(arrState, proxy.StatPtr.ItemNotify(item.Proxy))
+		arrState = append(arrState, ss.ItemNotify(item.Proxy))
 	}
 	//格式化输出处理逻辑
 	c.Writer.WriteHeader(200)

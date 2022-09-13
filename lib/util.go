@@ -115,12 +115,12 @@ func Md5Str(str string) string {
 func PrettyJson(v interface{}) string {
 	b, err := json.Marshal(v)
 	if err != nil {
-		return fmt.Sprint("%+v", v)
+		return fmt.Sprintf("%+v", v)
 	}
 	var out bytes.Buffer
 	err = json.Indent(&out, b, "", "  ")
 	if err != nil {
-		return fmt.Sprint("%+v", v)
+		return fmt.Sprintf("%+v", v)
 	}
 	return out.String()
 }
