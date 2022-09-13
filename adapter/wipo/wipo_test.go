@@ -62,14 +62,12 @@ func TestDate(t *testing.T) {
 func TestWipo(t *testing.T) {
 	lib.InitRedis("redis://:@127.0.0.1:6379/1")
 	//初始化数据资料信息
-	//{Proxy: "http://mZvV4hzyWoJ1dx653RWpIA@smartproxy.proxycrawl.com:8012", Status: 1}
-	proxyHost := []proxy.ProxySt{}
+	//
+	proxyHost := []proxy.ProxySt{{Proxy: "http://171.83.188.46:64256", Status: 1},{Proxy: "http://125.106.224.9:64256", Status: 1}}
+
+
 	proxy.Init(proxyHost, lib.Redis)
 	ss := &WipoSt{}
-
-//http://prorac2020:c02396-2f7787-27beef-1b857f-1ed432@global.rotating.proxyrack.net:9000
-
-//http://zixun:8bc455-ac96d5-8f89a2-0a4180-1b5f9e@global.rotating.proxyrack.net:9000
 
 	ss.Run("2022-08-01", "2022-09-12")
 }

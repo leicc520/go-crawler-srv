@@ -42,10 +42,23 @@ type WipoSt struct {
 //初始化处理流程
 func (s *WipoSt) init()  {
 	s.client = proxy.NewHttpRequest().IsProxy(true)
-	agent := s.client.ResetAgent() //浏览器头信息
+	agent := "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36"
+	//s.client.ResetAgent() //浏览器头信息
 	s.qz = Request{Type: "brand", La: "en", Queue: 1, Field6: "11932", P: PSt{Rows: wipoPageSize, Start: 0}}
+	s.client.SetCookie(wipoBaseURL+"/", "_pk_id.9.ec75=a033a688b78a6eec.1663048914.; _pk_ses.9.ec75=1;")
+	//s.stepInitMatomo()
 	s.stepInitCookie(agent)
 	s.stepInitSelect() //设置操作
+}
+
+func (s *WipoSt) stepInitMatomo() error {
+	header := map[string]string{"x-requested-with":"XMLHttpRequest", "referer":wipoBaseURL+"/branddb/en/"}
+	s.client.SetHeader(header)
+	query:= "ping=1&idsite=9&rec=1&r=592076&h=13&m=21&s=55&url=https%3A%2F%2Fbranddb.wipo.int%2Fbranddb%2Fsearch&_id=26b46471e457ac33&_idn=1&_refts=0&send_image=0&pdf=1&qt=0&realp=0&wma=0&fla=0&java=0&ag=0&cookie=1&res=1920x1080&dimension1=Global%20Brand%20Database&dimension2=en&pv_id=j3PC2F"
+	link := "/matomo/matomo.php?ping=1&idsite=9&rec=1&r=592076&h=13&m=21&s=55&url=https%3A%2F%2Fbranddb.wipo.int%2Fbranddb%2Fsearch&_id=26b46471e457ac33&_idn=1&_refts=0&send_image=0&pdf=1&qt=0&realp=0&wma=0&fla=0&java=0&ag=0&cookie=1&res=1920x1080&dimension1=Global%20Brand%20Database&dimension2=en&pv_id=j3PC2F"
+	_, err:= s.client.Request("https://wipoanalytics.wipo.int"+link, []byte(query), http.MethodPost)
+	s.client.DelHeader(header)
+	return err
 }
 
 //循环请求，直到成功为止，失败的话休眠最多1分钟
