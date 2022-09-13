@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/leicc520/go-crawler-srv/lib"
 	"github.com/leicc520/go-crawler-srv/lib/proxy"
+	"github.com/leicc520/go-crawler-srv/plugins"
 	"testing"
 	"time"
 
@@ -62,12 +63,8 @@ func TestDate(t *testing.T) {
 func TestWipo(t *testing.T) {
 	lib.InitRedis("redis://:@127.0.0.1:6379/1")
 	//初始化数据资料信息
-	//
-	proxyHost := []proxy.ProxySt{{Proxy: "http://171.83.188.46:64256", Status: 1},{Proxy: "http://125.106.224.9:64256", Status: 1}}
-
-
+	proxyHost := []proxy.ProxySt{{Proxy: "http://111.127.99.157:64256", Status: 1}}
 	proxy.Init(proxyHost, lib.Redis)
-	ss := &WipoSt{}
-
+	ss := &WipoSt{dpc:&plugins.ChromeDpSt{HeadLess: false, ProxyUrl: "http://111.127.99.157:64256"}}
 	ss.Run("2022-08-01", "2022-09-12")
 }

@@ -395,13 +395,15 @@ func (s *HttpSt) Request(url string, body []byte, method string) (result string,
 		StatPtr.Report(s.proxyIndex, req.Host, statusCode)
 	}
 	if err != nil || s.sp == nil {
-		log.Write(log.ERROR, url, err, string(body))
+		s.CloseProxy() //失败的情况关闭
+		log.Write(-1, url, err, string(body))
 		return
 	}
 	if s.sp.StatusCode == http.StatusOK {
 		return s.readResult() //返回请求回来的数据信息
 	} else {
 		s.CloseProxy() //失败的情况关闭
+		log.Write(-1, url, s.sp.Status, string(body))
 		return "", errors.New(s.sp.Status)
 	}
 }

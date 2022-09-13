@@ -63,6 +63,14 @@ type Response struct {
 	Qk           string `json:"qk"`
 }
 
+//养cookie返回数据信息
+type AgentCookieSt struct {
+	Cookie string
+	Agent  string
+	EC75   string
+	Stime  int64
+}
+
 //设置缓存的情况处理逻辑
 func setCache(state *WipoSt) {
 	if lib.Redis == nil {//未作初始化的情况

@@ -21,5 +21,8 @@ require (
 
 require (
 	github.com/Lazarus/lz-string-go v0.0.0-20210604111459-ed7cd5a66c48
+	github.com/chromedp/cdproto v0.0.0-20220827030233-358ed4af73cf
+	github.com/chromedp/chromedp v0.8.5
 	github.com/dop251/goja v0.0.0-20220906144433-c4d370b87b45
+	github.com/lib/pq v1.2.0
 )

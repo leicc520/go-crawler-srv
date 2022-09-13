@@ -1,10 +1,12 @@
 package wipo
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
+	"math/rand"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -13,7 +15,10 @@ import (
 	"time"
 
 	LZString "github.com/Lazarus/lz-string-go"
+	"github.com/chromedp/cdproto/network"
+	"github.com/chromedp/chromedp"
 	"github.com/leicc520/go-crawler-srv/lib/proxy"
+	"github.com/leicc520/go-crawler-srv/plugins"
 	"github.com/leicc520/go-orm"
 	"github.com/leicc520/go-orm/log"
 )
@@ -35,6 +40,8 @@ type WipoSt struct {
 	Qi        string        `json:"qi"`
 	Qk        string        `json:"qk"`
 	OpRequest int           `json:"op_request"`
+	dcpSp    *AgentCookieSt `json:"-"`
+	dpc *plugins.ChromeDpSt `json:"-"`
 	qz        Request       `json:"-"`
 	client   *proxy.HttpSt  `json:"-"`
 }
@@ -42,20 +49,71 @@ type WipoSt struct {
 //初始化处理流程
 func (s *WipoSt) init()  {
 	s.client = proxy.NewHttpRequest().IsProxy(true)
-	agent := "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36"
-	//s.client.ResetAgent() //浏览器头信息
+	//半小时重新生产一次 浏览器头信息
+	if s.dcpSp == nil || (time.Now().Unix() - s.dcpSp.Stime) > 180 {
+		s.dcpSp = s.chromeDpCookie()
+	}
 	s.qz = Request{Type: "brand", La: "en", Queue: 1, Field6: "11932", P: PSt{Rows: wipoPageSize, Start: 0}}
-	s.client.SetCookie(wipoBaseURL+"/", "_pk_id.9.ec75=a033a688b78a6eec.1663048914.; _pk_ses.9.ec75=1;")
-	//s.stepInitMatomo()
-	s.stepInitCookie(agent)
-	s.stepInitSelect() //设置操作
+	s.client.SetCookie(wipoBaseURL+"/", s.dcpSp.Cookie)
+	//s.stepInitMatomo(s.dcpSp.EC75)
+	s.stepInitCookie(s.dcpSp.Agent)
+	//s.stepInitSelect() //设置操作
 }
 
-func (s *WipoSt) stepInitMatomo() error {
+//生成chromeDpCookie信息
+func (s *WipoSt) chromeDpCookie() *AgentCookieSt {
+	url := wipoBaseURL+"/branddb/en/#"
+	sp  := &AgentCookieSt{}
+	cookieStr := make([]string, 0)
+	cbHandle  := func(url string, ctx context.Context) (string, error) {
+		err := chromedp.Run(ctx, chromedp.Tasks{
+			chromedp.Navigate(url),
+			chromedp.WaitVisible(`#results > div.results_navigation.top_results_navigation.displayButtons > div.results_pager.ui-widget-content > div.rowCountContainer.lightBackground`),
+			chromedp.Sleep(time.Duration(rand.Intn(3) * 1000 * 1000 * 1000)),
+			chromedp.Click("#results > div.results_navigation.top_results_navigation.displayButtons > div.results_pager.ui-widget-content > div.rowCountContainer.lightBackground > span > a"),
+			chromedp.Sleep(time.Duration(rand.Intn(3) * 1000 * 1000 * 1000)),
+			chromedp.WaitVisible(`#wipo-int > div.ui-dialog.ui-widget.ui-widget-content.ui-corner-all.ui-front.noClose.ui-dialog-buttons.ui-draggable`),
+			chromedp.Sleep(time.Duration(rand.Intn(3) * 1000 * 1000 * 1000)),
+			chromedp.Click(`#colchooser_gridForsearch_pane > div > div > div.available > div > a`),
+			chromedp.Click(`#wipo-int > div.ui-dialog.ui-widget.ui-widget-content.ui-corner-all.ui-front.noClose.ui-dialog-buttons.ui-draggable > div.ui-dialog-buttonpane.ui-widget-content.ui-helper-clearfix > div > button:nth-child(1)`),
+			chromedp.Sleep(time.Duration(rand.Intn(3) * 1000 * 1000 * 1000)),
+			chromedp.ActionFunc(func(ctx context.Context) error {
+				cookies, err := network.GetAllCookies().Do(ctx)
+				if err != nil {
+					return err
+				}
+				for _, cookie := range cookies {
+					if strings.ToLower(cookie.Name) == "_pk_id.9.ec75" {
+						arrStr := strings.Split(cookie.Value, ".")
+						if len(arrStr) > 1 {
+							sp.EC75 = arrStr[0]
+						}
+					}
+					cookieStr  = append(cookieStr, cookie.Name+"="+cookie.Value)
+				}
+				return nil
+			}),
+		})
+		if err != nil {
+			log.Write(-1, "chromedp error", err)
+		}
+		return "", nil
+	}
+	_, err:= s.dpc.Run(url, cbHandle) //运行数据资料信息
+	if err != nil {
+		log.Write(-1, "生成的cookie错误",  err)
+	}
+	sp.Agent, sp.Cookie, sp.Stime = s.dpc.Agent, strings.Join(cookieStr, ";"), time.Now().Unix()
+	log.Write(-1, "生成的cookie信息", sp.Agent, sp.EC75, sp.Cookie)
+	return sp
+}
+
+//初始化处理逻辑业务
+func (s *WipoSt) stepInitMatomo(ec75id string) error {
 	header := map[string]string{"x-requested-with":"XMLHttpRequest", "referer":wipoBaseURL+"/branddb/en/"}
 	s.client.SetHeader(header)
-	query:= "ping=1&idsite=9&rec=1&r=592076&h=13&m=21&s=55&url=https%3A%2F%2Fbranddb.wipo.int%2Fbranddb%2Fsearch&_id=26b46471e457ac33&_idn=1&_refts=0&send_image=0&pdf=1&qt=0&realp=0&wma=0&fla=0&java=0&ag=0&cookie=1&res=1920x1080&dimension1=Global%20Brand%20Database&dimension2=en&pv_id=j3PC2F"
-	link := "/matomo/matomo.php?ping=1&idsite=9&rec=1&r=592076&h=13&m=21&s=55&url=https%3A%2F%2Fbranddb.wipo.int%2Fbranddb%2Fsearch&_id=26b46471e457ac33&_idn=1&_refts=0&send_image=0&pdf=1&qt=0&realp=0&wma=0&fla=0&java=0&ag=0&cookie=1&res=1920x1080&dimension1=Global%20Brand%20Database&dimension2=en&pv_id=j3PC2F"
+	query:= "ping=1&idsite=9&rec=1&r=592076&h=13&m=21&s=55&url=https%3A%2F%2Fbranddb.wipo.int%2Fbranddb%2Fsearch&_id="+ec75id+"&_idn=1&_refts=0&send_image=0&pdf=1&qt=0&realp=0&wma=0&fla=0&java=0&ag=0&cookie=1&res=1920x1080&dimension1=Global%20Brand%20Database&dimension2=en&pv_id=j3PC2F"
+	link := "/matomo/matomo.php?ping=1&idsite=9&rec=1&r=592076&h=13&m=21&s=55&url=https%3A%2F%2Fbranddb.wipo.int%2Fbranddb%2Fsearch&_id="+ec75id+"&_idn=1&_refts=0&send_image=0&pdf=1&qt=0&realp=0&wma=0&fla=0&java=0&ag=0&cookie=1&res=1920x1080&dimension1=Global%20Brand%20Database&dimension2=en&pv_id=j3PC2F"
 	_, err:= s.client.Request("https://wipoanalytics.wipo.int"+link, []byte(query), http.MethodPost)
 	s.client.DelHeader(header)
 	return err
@@ -96,21 +154,22 @@ func (s *WipoSt) parseQk2QiString(str string) string {
 
 //第一步初始化要做的事件
 func (s *WipoSt) stepInitCookie(agent string) error  {
-	s.client.Reset() //初始化处理逻辑，包括jar的初始化
 	link      := wipoBaseURL+"/branddb/en/#"
 	result, _ := s.request(link, nil, http.MethodGet)
-	visitorId, err := wipoVisitorUunId(agent)
-	if err != nil {
-		log.Write(-1, "获取wipo访客ID失败.", err)
-		return err
-	}
-	s.client.SetCookie(link+"/", "wipo-visitor-uunid="+visitorId)
 	s.Qk = s.parseQk2QiString(result)
 	if len(s.Qk) < 1 {
 		log.Write(-1, "获取首页QK失败")
 		return errors.New("获取首页QK失败")
 	}
 	s.Qi = "0-"+s.Qk
+	/*
+		visitorId, err := wipoVisitorUunId(agent)
+		if err != nil {
+			log.Write(-1, "获取wipo访客ID失败.", err)
+			return err
+		}
+		s.client.SetCookie(link+"/", "wipo-visitor-uunid="+visitorId)
+	*/
 	return nil
 }
 
@@ -144,7 +203,7 @@ func (s *WipoSt) selectData() (*Response, error) {
 		"content-type":"application/x-www-form-urlencoded; charset=UTF-8", "referer":wipoBaseURL+"/branddb/en/",
 		"content-length":strconv.FormatInt(int64(len(body)), 10)}
 	s.client.SetHeader(header)
-	time.Sleep(time.Second*5) //休眠时间，不休眠的话会500
+	time.Sleep(time.Second*time.Duration(rand.Intn(5))) //休眠时间，不休眠的话会500
 	result, err := s.client.Request(link, body, http.MethodPost)
 	s.client.DelHeader(header)
 	if err != nil { //请求失败的情况
