@@ -1,0 +1,6 @@
+go.sum
+.idea
+*.exe
+cachedir
+cachedir/*
+web.scraper.srv*.yml
