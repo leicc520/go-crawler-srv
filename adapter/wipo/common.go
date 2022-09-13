@@ -1,5 +1,13 @@
 package wipo
 
+import (
+	"encoding/json"
+	"github.com/leicc520/go-crawler-srv/lib"
+	"github.com/leicc520/go-orm"
+	"github.com/leicc520/go-orm/log"
+	"time"
+)
+
 type SqSt struct {
 	Te string `json:"te"`
 	Fi string `json:"fi"`
@@ -72,4 +80,34 @@ type Response struct {
 		FacetRanges struct {
 		} `json:"facet_ranges"`
 	} `json:"facet_counts"`
+}
+
+//设置缓存的情况处理逻辑
+func setCache(state *WipoSt) {
+	if lib.Redis == nil {//未作初始化的情况
+		return
+	}
+	skey := "state@"+state.StartDate.Format(orm.DATEYMDFormat)
+	skey += "-"+state.EndDate.Format(orm.DATEYMDFormat)
+	str, _ := json.Marshal(state)
+	lib.Redis.Set(skey, str, time.Hour*72) //缓存三天
+}
+
+//获取缓存数据资料信息
+func getCache(state *WipoSt) {
+	if lib.Redis == nil {//未作初始化的情况
+		return
+	}
+	skey := "state@"+state.StartDate.Format(orm.DATEYMDFormat)
+	skey += "-"+state.EndDate.Format(orm.DATEYMDFormat)
+	str, err := lib.Redis.Get(skey).Result()
+	if len(str) < 1 || err != nil {
+		return
+	}
+	cState := WipoSt{}
+	if err = json.Unmarshal([]byte(str), &cState); err == nil {
+		state.IndexDate = cState.IndexDate
+		state.IndexPage = cState.IndexPage
+		log.Write(-1, "完成初始化逻辑", cState.IndexPage, cState.IndexDate)
+	}
 }

@@ -3,6 +3,7 @@ package wipo
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/leicc520/go-crawler-srv/lib"
 	"testing"
 	"time"
 )
@@ -56,6 +57,7 @@ func TestDate(t *testing.T) {
 }
 
 func TestWipo(t *testing.T) {
+	lib.InitRedis("redis://:@127.0.0.1:6379/1")
 	ss := &WipoSt{}
 	ss.Run("2022-09-09", "2022-09-12")
 }

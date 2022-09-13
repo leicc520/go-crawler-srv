@@ -189,6 +189,7 @@ func (s *WipoSt) Run(startDate, endDate string)  {
 		panic("起止日期解析异常")
 	}
 	s.IndexDate   = s.StartDate //这个时间前后抓数据
+	getCache(s) //初始化逻辑
 	for {
 		log.Write(log.INFO, "遍历开始抓取："+s.IndexDate.Format(orm.DATEYMDSTRFormat)+"的数据")
 		for { //遍历抓取该日期的数据列表
@@ -197,6 +198,7 @@ func (s *WipoSt) Run(startDate, endDate string)  {
 				continue
 			} else {//请求正常的情况
 				s.handle(s.IndexDate, s.IndexPage, sp)
+				setCache(s) //设置缓存处理逻辑
 				if s.IndexPage >= s.TotalPage  {//页数已经抓取完成了
 					break
 				}
@@ -208,6 +210,7 @@ func (s *WipoSt) Run(startDate, endDate string)  {
 			log.Write(log.INFO, "数据已经抓取完毕...")
 			break
 		}
+		s.IndexPage = 0 //重新从0开始抓
 	}
 }
 
