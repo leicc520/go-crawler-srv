@@ -34,52 +34,33 @@ type Request struct {
 	Field6 string `json:"_"`
 }
 
+type DocItem struct {
+	OO     string    `json:"OO"`
+	Score  float64   `json:"score"`
+	STATUS string    `json:"STATUS"`
+	AD     time.Time `json:"AD"`
+	HOL    []string  `json:"HOL"`
+	NC     []int     `json:"NC"`
+	IMG    string    `json:"IMG"`
+	SOURCE string    `json:"SOURCE"`
+	DOC    string    `json:"DOC"`
+	ID     string    `json:"ID"`
+	BRAND  []string  `json:"BRAND"`
+	HOLC   []string  `json:"HOLC"`
+}
+
 //返回结果的回参数据信息
 type Response struct {
 	LastUpdated int64  `json:"lastUpdated"`
 	Sv          string `json:"sv"`
 	Response    struct {
-		Docs     []interface{} `json:"docs"`
-		NumFound int           `json:"numFound"`
-		Start    int           `json:"start"`
-		MaxScore int           `json:"maxScore"`
+		Docs []DocItem `json:"docs"`
+		NumFound int     `json:"numFound"`
+		Start    int     `json:"start"`
+		MaxScore float64 `json:"maxScore"`
 	} `json:"response"`
 	Qi           string `json:"qi"`
 	Qk           string `json:"qk"`
-	Highlighting struct {
-	} `json:"highlighting"`
-	FacetCounts struct {
-		FacetIntervals struct {
-		} `json:"facet_intervals"`
-		FacetQueries struct {
-			EDNOWDAY1DAYTONOWDAY6MONTHS int `json:"ED:[NOW/DAY+1DAY TO NOW/DAY+6MONTHS]"`
-			ITYCOMBINED                 int `json:"ITY:COMBINED"`
-			EDNOWDAY1DAYTONOWDAY1MONTH  int `json:"ED:[NOW/DAY+1DAY TO NOW/DAY+1MONTH]"`
-			EDNOWDAY1DAYTO              int `json:"ED:[NOW/DAY+1DAY TO *]"`
-			EDTONOWDAY                  int `json:"ED:[* TO NOW/DAY]"`
-			EDNOWDAY1DAYTONOWDAY1YEAR   int `json:"ED:[NOW/DAY+1DAY TO NOW/DAY+1YEAR]"`
-			ITYNONVERBAL                int `json:"ITY:NONVERBAL"`
-			EDNOWDAY1MONTHTONOWDAY      int `json:"ED:[NOW/DAY-1MONTH TO NOW/DAY]"`
-			ITYVERBAL                   int `json:"ITY:VERBAL"`
-			ITYUNKNOWN                  int `json:"ITY:UNKNOWN"`
-		} `json:"facet_queries"`
-		FacetFields struct {
-			OO struct {
-			} `json:"OO"`
-			STATUS struct {
-			} `json:"STATUS"`
-			MTY struct {
-			} `json:"MTY"`
-			SOURCE struct {
-			} `json:"SOURCE"`
-			HOLC struct {
-			} `json:"HOLC"`
-		} `json:"facet_fields"`
-		FacetHeatmaps struct {
-		} `json:"facet_heatmaps"`
-		FacetRanges struct {
-		} `json:"facet_ranges"`
-	} `json:"facet_counts"`
 }
 
 //设置缓存的情况处理逻辑
@@ -87,7 +68,7 @@ func setCache(state *WipoSt) {
 	if lib.Redis == nil {//未作初始化的情况
 		return
 	}
-	skey := "state@"+state.StartDate.Format(orm.DATEYMDFormat)
+	skey := "wipo@"+state.StartDate.Format(orm.DATEYMDFormat)
 	skey += "-"+state.EndDate.Format(orm.DATEYMDFormat)
 	str, _ := json.Marshal(state)
 	lib.Redis.Set(skey, str, time.Hour*72) //缓存三天
@@ -98,7 +79,7 @@ func getCache(state *WipoSt) {
 	if lib.Redis == nil {//未作初始化的情况
 		return
 	}
-	skey := "state@"+state.StartDate.Format(orm.DATEYMDFormat)
+	skey := "wipo@"+state.StartDate.Format(orm.DATEYMDFormat)
 	skey += "-"+state.EndDate.Format(orm.DATEYMDFormat)
 	str, err := lib.Redis.Get(skey).Result()
 	if len(str) < 1 || err != nil {
@@ -106,8 +87,10 @@ func getCache(state *WipoSt) {
 	}
 	cState := WipoSt{}
 	if err = json.Unmarshal([]byte(str), &cState); err == nil {
-		state.IndexDate = cState.IndexDate
+		if cState.RangeDate != nil && len(cState.RangeDate) == 2 {
+			state.RangeDate = cState.RangeDate
+		}
 		state.IndexPage = cState.IndexPage
-		log.Write(-1, "完成初始化逻辑", cState.IndexPage, cState.IndexDate)
+		log.Write(-1, "完成初始化逻辑", cState.IndexPage, cState.RangeDate)
 	}
 }

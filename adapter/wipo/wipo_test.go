@@ -4,8 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/leicc520/go-crawler-srv/lib"
+	"github.com/leicc520/go-crawler-srv/lib/proxy"
 	"testing"
 	"time"
+
+	_ "github.com/lib/pq"
 )
 import "github.com/Lazarus/lz-string-go"
 
@@ -24,7 +27,7 @@ func TestEncrypt(t *testing.T) {
 	res, err = LZString.Decompress(str, "")
 	fmt.Println(res, err)
 	
-	str = "N4IgDiBcoM4KYEMBOBjAFlWBHKBtUALnFCLgEwAMZZAtBQJx30AqFFkbHFAWgATMB5XpWpMmzMgGZIAVnqz63ALogANCABmASxIAlACJqQAEwIkRtBkxABfJTfVIA9gHcYUAGwV1MAsjOQAIwAHBQOIAQAnmDEkCAARkgIAHbGRgA2CCRwyUZYOnHBNAAKAOaSHggoHgCaTnAUAMIaCABugUhoMkgAsnAAVgBq9ACqNfQwAMouAOyRga4AcggAYgBeTszBALx5AK5wB1CB6gD6JIGB9JJktkAAA="
+	str = "N4IgDiBcoM4KYEMBOBjAFlWBHKBtUALnFCAKoDKIANCAGYCWJA8kyAL5WHGQi4BMABj58AtAIAcYgIwAVAQMjzFAgFoACGUzWDhYyRJl8AzJACsATjPmVAXWp1GPAIIARewBMCJfkNETpGlo6fvridmw2bBwgBACeYNwgAEZICAB27vYANggkcGn2WI4gonAAEmAA9kgAVrRgAPQAkgQA5mBoKEkAXgCKKAAsTqZxKKRlAwDUAOIA0gMA1pMAQjLiDb3iaeZOALyFAK5wR1BSNAD6JFJS5kZ87EAAA=="
 	res, err = LZString.Decompress(str, "")
 	fmt.Println(res, err)
 	//8-Pg36ac6Yoe0Cfav1rh5rMejV9UY9sSw7y1owNaFzoT8=
@@ -58,6 +61,15 @@ func TestDate(t *testing.T) {
 
 func TestWipo(t *testing.T) {
 	lib.InitRedis("redis://:@127.0.0.1:6379/1")
+	//初始化数据资料信息
+	//{Proxy: "http://mZvV4hzyWoJ1dx653RWpIA@smartproxy.proxycrawl.com:8012", Status: 1}
+	proxyHost := []proxy.ProxySt{}
+	proxy.Init(proxyHost, lib.Redis)
 	ss := &WipoSt{}
-	ss.Run("2022-09-09", "2022-09-12")
+
+//http://prorac2020:c02396-2f7787-27beef-1b857f-1ed432@global.rotating.proxyrack.net:9000
+
+//http://zixun:8bc455-ac96d5-8f89a2-0a4180-1b5f9e@global.rotating.proxyrack.net:9000
+
+	ss.Run("2022-08-01", "2022-09-12")
 }

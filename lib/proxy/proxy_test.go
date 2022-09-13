@@ -22,7 +22,7 @@ func TestStatistic(t *testing.T) {
 			req, _ := http.NewRequest("GET", "http://"+host+"/demo", nil)
 			mystatus := status[rand.Int()%len(status)]
 			sp := http.Response{StatusCode: mystatus}
-			ss.Report(idx, req, &sp)
+			ss.Report(idx, req.Host, sp.StatusCode)
 			time.Sleep(time.Second)
 		}
 	}()
