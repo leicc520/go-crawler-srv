@@ -122,6 +122,14 @@ func (s *WipoSt) chromeDpCookie() (*AgentCookieSt, error) {
 		defer goCancel()
 		err := chromedp.Run(goCtx, chromedp.Tasks{
 			chromedp.Navigate(url),
+			chromedp.ActionFunc(func(ctx context.Context) error {
+				chromedp.Run(ctx, chromedp.OuterHTML("html", &htmlDoc))
+				if strings.Contains(htmlDoc, "databaseInformation") || strings.Index(htmlDoc, "qk") < 2 {
+					log.Write(-1, htmlDoc)
+					return errors.New("请求界面返回异常...")
+				}
+				return nil
+			}),
 			chromedp.WaitVisible(`#results > div.results_navigation.top_results_navigation.displayButtons > div.results_pager.ui-widget-content > div.rowCountContainer.lightBackground`),
 			chromedp.Sleep(time.Duration(rand.Intn(3))*time.Second),
 			chromedp.Click("#results > div.results_navigation.top_results_navigation.displayButtons > div.results_pager.ui-widget-content > div.rowCountContainer.lightBackground > span > a"),
