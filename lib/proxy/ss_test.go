@@ -2,9 +2,16 @@ package proxy
 
 import (
 	"fmt"
+	"github.com/leicc520/go-crawler-srv/lib/proxy/channal"
 	"testing"
 	"time"
 )
+
+func TestProxyChannel(t *testing.T) {
+	ss := ProxySt{Url: "", Proxy: channal.PROXY_CHANNEL_EASYGO, Status: 1}
+	ss.CutProxy()
+	fmt.Println(ss)
+}
 
 func TestAfter(t *testing.T) {
 	aa := time.Second*3
