@@ -124,7 +124,7 @@ func (s *WipoSt) chromeDpCookie() (*AgentCookieSt, error) {
 			chromedp.Navigate(url),
 			chromedp.ActionFunc(func(ctx context.Context) error {
 				chromedp.Run(ctx, chromedp.OuterHTML("html", &htmlDoc))
-				if strings.Contains(htmlDoc, "databaseInformation") || strings.Index(htmlDoc, "qk") < 2 {
+				if !strings.Contains(htmlDoc, "databaseInformation") || strings.Index(htmlDoc, "qk") < 2 {
 					log.Write(-1, htmlDoc)
 					return errors.New("请求界面返回异常...")
 				}
