@@ -372,7 +372,7 @@ func (s *WipoSt) handle(indexPage int, sp *Response) {
 //格式化日期数据资料信息
 func (s *WipoSt) formatRange() string {
 	startDate := s.RangeDate[0].Format(orm.DATEYMDSTRFormat)
-	endDate   := s.RangeDate[0].Format(orm.DATEYMDSTRFormat)
+	endDate   := s.RangeDate[1].Format(orm.DATEYMDSTRFormat)
 	dtStr     := "["+startDate+" TO "+endDate+"]"
 	return dtStr
 }
