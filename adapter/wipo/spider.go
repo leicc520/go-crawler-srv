@@ -281,6 +281,10 @@ func (s *WipoSt) selectData() (*Response, error) {
 		log.Write(-1, "返回结果结构异常", err)
 		return nil, err
 	}
+	if sp.LastUpdated < 1 {
+		log.Write(-1, "返回结果结构异常", result)
+		return nil, errors.New(result)
+	}
 	//解析请求，复制到下一个请求的处理逻辑
 	s.Qi = sp.Qi //向上取整，返回页数
 	if len(sp.Qk) > 0 && len(sp.Qi) > 0 {
