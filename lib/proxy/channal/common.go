@@ -2,7 +2,7 @@ package channal
 
 const (
 	EASY_GO_PROXY = "http://zltiqu.pyhttp.taolop.com"
-
+	SKY_GO_PROXY  = "http://api.tianqiip.com"
 	PROXY_SOCK5   = "tcp"
 	PROXY_HTTPS   = "https"
 	PROXY_HTTP    = "http"

@@ -15,7 +15,8 @@ import (
 	"time"
 
 	LZString "github.com/Lazarus/lz-string-go"
-	"github.com/chromedp/cdproto/network"
+	"github.com/leicc520/go-crawler-srv/lib"
+    "github.com/chromedp/cdproto/network"
 	"github.com/chromedp/chromedp"
 	"github.com/leicc520/go-crawler-srv/lib/proxy"
 	"github.com/leicc520/go-crawler-srv/plugins"
@@ -40,6 +41,8 @@ type WipoSt struct {
 	Qi        string        `json:"qi"`
 	Qk        string        `json:"qk"`
 	OpRequest int           `json:"op_request"`
+	Success   int           `json:"-"`
+	IsCookie  bool          `json:"-"`
 	dcpSp    *AgentCookieSt `json:"-"`
 	dpc *plugins.ChromeDpSt `json:"-"`
 	qz        Request       `json:"-"`
@@ -62,11 +65,23 @@ func (s *WipoSt) init()  {
 			time.Sleep(time.Second)
 		}
 	}
+	s.setCookieAgent() //保存cookie信息
 	s.qz = Request{Type: "brand", La: "en", Queue: 1, Field6: "11932", P: PSt{Rows: wipoPageSize, Start: 0}}
 	s.client.SetCookie(wipoBaseURL+"/", s.dcpSp.Cookie)
 	//s.stepInitMatomo(s.dcpSp.EC75)
 	s.stepInitCookie(s.dcpSp.Agent)
 	//s.stepInitSelect() //设置操作
+}
+
+//cookie保存起来
+func (s *WipoSt) setCookieAgent() {
+	if s.Success > 3 && !s.IsCookie {//将cookie记录，便于日后使用
+		ckey := getCkey("cookie", s)
+		body, _ := json.Marshal(s.dcpSp)
+		lib.Redis.LPush(ckey, string(body))
+		s.IsCookie = true
+		log.Write(log.INFO, "设置报错cookie", body)
+	}
 }
 
 //生成chromeDpCookie信息
@@ -75,10 +90,10 @@ func (s *WipoSt) chromeDpCookie() (*AgentCookieSt, error) {
 	s.dpc.ProxyUrl = proxy.GetStatistic().GetProxy(true, true)
 	url := wipoBaseURL+"/branddb/en/#"
 	sp  := &AgentCookieSt{}
-	cookieStr, htmlDoc, dialog := make([]string, 0), "", ""
-
+	cookieStr, htmlDoc := make([]string, 0), ""
+	//var dialog string = ""
 	cbHandle  := func(url string, ctx context.Context) (string, error) {
-		goCtx, goCancel := context.WithTimeout(ctx, time.Second*30)
+		goCtx, goCancel := context.WithTimeout(ctx, time.Second*120)
 		defer goCancel()
 		err := chromedp.Run(goCtx, chromedp.Tasks{
 			chromedp.Navigate(url),
@@ -101,7 +116,7 @@ func (s *WipoSt) chromeDpCookie() (*AgentCookieSt, error) {
 			chromedp.Sleep(1 * time.Second),
 			chromedp.Click(`//*[@id="results"]/div[1]/div[2]/div[2]/span/div[2]/ul/li/ul/li[3]`),
 			chromedp.Sleep(time.Duration((rand.Intn(5) + rand.Intn(5)) * 1000 * 1000 * 1000)),
-			chromedp.EvaluateAsDevTools(`document.querySelector("#wipo-int > div.ui-dialog.ui-widget.ui-widget-content.ui-corner-all.ui-front.ui-dialog-buttons.ui-draggable.ui-resizable")`, &dialog),
+			//chromedp.EvaluateAsDevTools(`document.querySelector("#wipo-int > div.ui-dialog.ui-widget.ui-widget-content.ui-corner-all.ui-front.ui-dialog-buttons.ui-draggable.ui-resizable")`, &dialog),
 			//end
 			chromedp.Sleep(1 * time.Second*3),
 			chromedp.OuterHTML("html", &htmlDoc),
@@ -342,6 +357,7 @@ func (s *WipoSt) Run(startDate, endDate string)  {
 				continue
 			} else {//请求正常的情况
 				s.handle(s.IndexPage, sp)
+				s.Success++
 				setCache(s) //设置缓存处理逻辑
 				if s.IndexPage >= s.TotalPage  {//页数已经抓取完成了
 					break

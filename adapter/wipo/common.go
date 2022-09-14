@@ -71,13 +71,18 @@ type AgentCookieSt struct {
 	Stime  int64
 }
 
+func getCkey(prefix string, state *WipoSt) string {
+	skey := prefix + "@"+state.StartDate.Format(orm.DATEYMDFormat)
+	skey += "-"+state.EndDate.Format(orm.DATEYMDFormat)
+	return skey
+}
+
 //设置缓存的情况处理逻辑
 func setCache(state *WipoSt) {
 	if lib.Redis == nil {//未作初始化的情况
 		return
 	}
-	skey := "wipo@"+state.StartDate.Format(orm.DATEYMDFormat)
-	skey += "-"+state.EndDate.Format(orm.DATEYMDFormat)
+	skey := getCkey("wipo", state)
 	str, _ := json.Marshal(state)
 	lib.Redis.Set(skey, str, time.Hour*72) //缓存三天
 }
@@ -87,8 +92,7 @@ func getCache(state *WipoSt) {
 	if lib.Redis == nil {//未作初始化的情况
 		return
 	}
-	skey := "wipo@"+state.StartDate.Format(orm.DATEYMDFormat)
-	skey += "-"+state.EndDate.Format(orm.DATEYMDFormat)
+	skey := getCkey("wipo", state)
 	str, err := lib.Redis.Get(skey).Result()
 	if len(str) < 1 || err != nil {
 		return
