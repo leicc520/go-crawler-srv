@@ -28,8 +28,13 @@ func TestEncrypt(t *testing.T) {
 	str = "N4IgDiBcoM4KYEMBOBjAFlWBHKBtUALnFCLgEwAMZZAtBQJx30AqFFkbHFAWgATMB5XpWpMmzMgGZIAVnqz63ALogANCABmASxIAlACJqQAEwIkRtBkxABfJTfVIA9gHcYUAGwV1MAsjOQAIyUDiAEAJ5gxJAgAEZICAB2xkYANggkcIlGWDoxABw0AAoA5pIeCCgeAJpOcBQAwhoIAG6BSGgySACycABWAGr0AKrV9DAAyi4A7OGBrgByCABiAF5OzPkAvDkArnD7UIHqAPokgYH0kmS2QA"
 	res, err = LZString.Decompress(str, "")
 	fmt.Println(res, err)
-	
-	str = "N4IgDiBcoM4KYEMBOBjAFlWBHKBtUALnFCAKoDKIANCAGYCWJA8kyAL5WHGQi4BMABj58AtAIAcYgIwAVAQMjzFAgFoACGUzWDhYyRJl8AzJACsATjPmVAXWp1GPAIIARewBMCJfkNETpGlo6fvridmw2bBwgBACeYNwgAEZICAB27vYANggkcGn2WI4gonAAEmAA9kgAVrRgAPQAkgQA5mBoKEkAXgCKKAAsTqZxKKRlAwDUAOIA0gMA1pMAQjLiDb3iaeZOALyFAK5wR1BSNAD6JFJS5kZ87EAAA=="
+
+	str = "N4IgDiBcoGYDZRAQQCIBoBCAlJA5dAougBIDyAMmmeQMJoCS69AsgOJrmmulq52k8s6AMqkAqlhoE0wgCpJZY4WgDOAYwD2AJwCmDdClI0QAXzQgVUUCp0AXKyDWXIjgBY61Aa0w58M8ZLScgpKqpq6aAJUFNG0 mioHFw8fAxsaEJoRKZmILYAnmA6iABGWgCGAHYAJiDmcOWIOpV1IACOAJaIAIwAtOXVAAwArrZi1Z4AXjAAnAAaAO4ArGqkAIq4CzTEC QAYtVrKhhtAFKuw8NrpG2yABw0YgDmzJ4AvK1twzrfUN3mAH0et0ZgBmABMpiAA"
+
+	res, err = LZString.Decompress(str, "")
+	fmt.Println(res, err)
+
+	str = "N4IgDiBcoM4KYEMBOBjAFlWBHKBtUALnFCAKoDKIANCAGYCWJA8kyAL4C6bNtANiQEEAIlQBCAJQEA5EQFERACSYAZKkuUBhKgEkR2gLIBxKsqaGmVKVpZVxI8k1LiNsquQAqA9xSowUAeyQ4HREhJg12GhhMEHgCGJRoyBB0OBQAazFJGTdHZ1cPLx8/QOCbdTUVLV0qYRMzCysdI1s5IXZuEAIATzBiZIAjJAQAOwATahBeBBI4EcmsRmSARgBaBDGABgBXAlIx9IAvWgBOAA0AdwBWFCYARSkLjQUL5QAxMbuYUSwAKTRtts7kwsO4ABwaUgAc306QAvAttnAkVBljQAPokZbLE4AZgATOwgAAA=="
 	res, err = LZString.Decompress(str, "")
 	fmt.Println(res, err)
 	//8-Pg36ac6Yoe0Cfav1rh5rMejV9UY9sSw7y1owNaFzoT8=
@@ -63,10 +68,14 @@ func TestDate(t *testing.T) {
 
 func TestWipo(t *testing.T) {
 	lib.InitRedis("redis://:@127.0.0.1:6379/1")
+
+
+
 	//初始化数据资料信息
 	//{Url: "", Proxy: "easy-go-http", Status: 1, IFGet: &channal.EasyGoSt{}}
-	proxyHost := []proxy.ProxySt{{Url: "", Proxy: "sky-go-http", Status: 1, IFGet: &channal.SkyStartGoSt{}}}
+	//{Url: "", Proxy: "sky-go-http", Status: 1, IFGet: &channal.SkyStartGoSt{}}
+	proxyHost := []proxy.ProxySt{{Url: "", Proxy: "easy-go-http", Status: 1, IFGet: &channal.EasyGoSt{}}}
 	proxy.Init(proxyHost, lib.Redis)
-	ss := &WipoSt{dpc:&plugins.ChromeDpSt{HeadLess: false}}
+	ss := &WipoSt{dpc:&plugins.ChromeDpSt{HeadLess: false}, Country: "US"}
 	ss.Run("2022-08-01", "2022-08-25")
 }

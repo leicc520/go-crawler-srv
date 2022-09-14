@@ -39,5 +39,27 @@ func newApWipoBrand() *apWipoBrand {
 	return data
 }
 
+type apWipoResult struct {
+	*orm.ModelSt
+}
+
+//这里的dbPool
+func newApWipoResult() *apWipoResult {
+	fields := map[string]reflect.Kind{
+		"id": reflect.Int64,	//账号id
+	}
+	args  := map[string]interface{}{
+		"table":		"ap_wipo_result",
+		"orgtable":		"ap_wipo_result",
+		"prikey":		"id",
+		"dbmaster":		"dbmaster",
+		"dbslaver":		"dbslaver",
+		"slot":			0,
+	}
+	data := &apWipoResult{&orm.ModelSt{}}
+	data.Init(&orm.GdbPoolSt, args, fields)
+	return data
+}
+
 
 

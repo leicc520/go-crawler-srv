@@ -15,9 +15,9 @@ import (
 	"time"
 
 	LZString "github.com/Lazarus/lz-string-go"
-	"github.com/leicc520/go-crawler-srv/lib"
-    "github.com/chromedp/cdproto/network"
+	"github.com/chromedp/cdproto/network"
 	"github.com/chromedp/chromedp"
+	"github.com/leicc520/go-crawler-srv/lib"
 	"github.com/leicc520/go-crawler-srv/lib/proxy"
 	"github.com/leicc520/go-crawler-srv/plugins"
 	"github.com/leicc520/go-orm"
@@ -29,12 +29,14 @@ const (
 	wipoEndDate = "2022-09-12"
 	wipo7Days   = time.Hour*24*2
 	wipoPageSize= 60
+	wipoFields  = "AD,BRAND,ED,HOL,HOLC,ID,IMG,LOGO,NC,OO,RD,SOURCE,STATUS,score,ID,DOC"
+	wipoFieldsSets = "check,BRAND,SOURCE,STATUS,score,OO,HOL,HOLC,ID,AD,LOGO,NC,IMG,RD,ED"
 )
-
 
 type WipoSt struct {
 	TotalPage int           `json:"end_page"`
 	IndexPage int           `json:"index_page"`
+	Country   string        `json:"country"`
 	EndDate   time.Time     `json:"end_date"`
 	StartDate time.Time     `json:"start_date"`
 	RangeDate []time.Time   `json:"range_date"`
@@ -43,6 +45,7 @@ type WipoSt struct {
 	OpRequest int           `json:"op_request"`
 	Success   int           `json:"-"`
 	IsCookie  bool          `json:"-"`
+	ormRs    *apWipoResult  `json:"-"`
 	dcpSp    *AgentCookieSt `json:"-"`
 	dpc *plugins.ChromeDpSt `json:"-"`
 	qz        Request       `json:"-"`
@@ -55,18 +58,20 @@ func (s *WipoSt) init()  {
 	s.client = proxy.NewHttpRequest().IsProxy(true)
 	//半小时重新生产一次 浏览器头信息
 	if s.dcpSp == nil || (time.Now().Unix() - s.dcpSp.Stime) > 86400 {
-		for {
-			s.dcpSp, err = s.chromeDpCookie()
-			if err == nil {
-				log.Write(-1, "模拟操作OK啦！")
-				break
+		//s.dcpSp  = s.getCookieAgent()
+		if s.dcpSp == nil {//取不到养的cookie的情况
+			for {
+				s.dcpSp, err = s.chromeDpCookie()
+				if err == nil {
+					log.Write(-1, "模拟操作OK啦！")
+					break
+				}
+				//休眠1秒钟
+				time.Sleep(time.Second)
 			}
-			//休眠1秒钟
-			time.Sleep(time.Second)
 		}
 	}
 	s.setCookieAgent() //保存cookie信息
-	s.qz = Request{Type: "brand", La: "en", Queue: 1, Field6: "11932", P: PSt{Rows: wipoPageSize, Start: 0}}
 	s.client.SetCookie(wipoBaseURL+"/", s.dcpSp.Cookie)
 	//s.stepInitMatomo(s.dcpSp.EC75)
 	s.stepInitCookie(s.dcpSp.Agent)
@@ -82,6 +87,21 @@ func (s *WipoSt) setCookieAgent() {
 		s.IsCookie = true
 		log.Write(log.INFO, "设置报错cookie", body)
 	}
+}
+
+//数据获取成功的情况，异常的情况不做处理
+func (s *WipoSt) getCookieAgent() *AgentCookieSt {
+	ckey := getCkey("cookie", s)
+	rs, err := lib.Redis.RPop(ckey).Result()
+	if err == nil && len(rs) > 0 {
+		sp  := &AgentCookieSt{}
+		if err := json.Unmarshal([]byte(rs), sp); err == nil && len(sp.Cookie) > 0 {
+			sp.Stime = time.Now().Unix()
+			log.Write(-1, "缓存获取cookie初始化...")
+			return sp
+		}
+	}
+	return nil
 }
 
 //生成chromeDpCookie信息
@@ -273,6 +293,7 @@ func (s *WipoSt) selectData() (*Response, error) {
 			}
 		}
 	}
+	s.result2db(result) //保存到数据库中
 	s.TotalPage = int(math.Ceil(float64(sp.Response.NumFound) / float64(wipoPageSize)))
 	s.IndexPage+= 1
 	return &sp, nil
@@ -284,7 +305,7 @@ func (s *WipoSt) genSelectQZParams() string {
 	endDate   := s.RangeDate[1].Format(orm.DATEYMDSTRFormat)
 	dtStr     := "["+startDate+" TO "+endDate+"]"
 	sq1 := SqSt{Dt: dtStr, Fi: "AD", Te: "["+startDate+"T00:00:00Z TO "+endDate+"T23:59:59Z]"}
-	sq2 := SqSt{Dt: "", Fi:"OO", Te: "US"} //限制只要美国
+	sq2 := SqSt{Dt: "", Fi:"OO", Te: s.Country} //限制只要美国
 	s.qz.P.Search = SearchSt{Sq: []SqSt{sq1, sq2}}
 	s.qz.Qi       = s.Qi
 	s.qz.P.Start  = s.IndexPage * wipoPageSize //计算已经到了第几页
@@ -293,6 +314,21 @@ func (s *WipoSt) genSelectQZParams() string {
 	log.Write(log.INFO, string(body))
 	log.Write(log.INFO, qzStr)
 	return qzStr
+}
+
+//更新结果到db当中
+func (s *WipoSt) result2db(result string) {
+	stime   := time.Now().Unix()
+	dateStr := s.formatRange()
+	s.ormRs.NewOneFromHandler(func(st *orm.QuerySt) *orm.QuerySt {
+		st.Value("datestr", dateStr).Value("stime", stime).Value("result", result)
+		st.Value("page", s.IndexPage).Value("country", s.Country)
+		return st
+	}, func(st *orm.QuerySt) interface{} {
+		st.ConflictField("\"datestr\",\"country\",\"page\"")
+		st.Duplicate("stime", stime).Duplicate("result", result)
+		return st
+	})
 }
 
 //解析数据处理逻辑
@@ -310,6 +346,7 @@ func (s *WipoSt) handle(indexPage int, sp *Response) {
 				st.Value("oo", doc.OO).Value("score", doc.Score).Value( "status",doc.STATUS)
 				st.Value("ad", doc.AD.Unix()).Value("hol", string(docStr)).Value("doc", doc.DOC)
 				st.Value("nc", string(ncStr)).Value("img", doc.IMG).Value("source", doc.SOURCE)
+				st.Value("ed", doc.ED).Value("rd", doc.RD)
 				st.Value("number", doc.ID).Value("brand", string(brandStr)).Value("holc", string(holcStr))
 				st.Value("origin", string(originStr)).Value("stime", time.Now().Unix())
 				return st
@@ -319,6 +356,7 @@ func (s *WipoSt) handle(indexPage int, sp *Response) {
 				st.Duplicate("ad", doc.AD.Unix()).Duplicate("hol", string(docStr)).Duplicate("doc", doc.DOC)
 				st.Duplicate("nc", string(ncStr)).Duplicate("img", doc.IMG).Duplicate("source", doc.SOURCE)
 				st.Duplicate("brand", string(brandStr)).Duplicate("holc", string(holcStr))
+				st.Duplicate("ed", doc.ED).Duplicate("rd", doc.RD)
 				st.Duplicate("origin", string(originStr)).Duplicate("stime", time.Now().Unix())
 				return nil
 			})
@@ -345,10 +383,14 @@ func (s *WipoSt) Run(startDate, endDate string)  {
 		log.Write(-1, "起止日期解析异常", err2, err1)
 		panic("起止日期解析异常")
 	}
+	s.ormRs = newApWipoResult()
 	//这个时间前后抓数据 获取最近一周的数据
 	s.RangeDate = []time.Time{s.StartDate, s.StartDate.Add(wipo7Days)}
 	s.init() //初始化完成第一个请求
 	getCache(s) //初始化逻辑
+	s.ormRs = newApWipoResult()
+	s.qz = Request{Type: "brand", La: "en", Queue: 1, Field6: "11932",
+		P: PSt{Rows: wipoPageSize, Start: 0, Fl: wipoFields}, S: SSt{Set: SetSt{Cs: wipoFieldsSets}}}
 	for {
 		log.Write(log.INFO, "遍历开始抓取："+s.formatRange()+"的数据")
 		for { //遍历抓取该日期的数据列表

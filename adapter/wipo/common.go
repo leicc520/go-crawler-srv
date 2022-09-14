@@ -20,13 +20,23 @@ type SearchSt struct {
 
 type PSt struct {
 	Search SearchSt `json:"search"`
+	Fl string `json:"fl"`
 	Rows  int `json:"rows"`
 	Start int `json:"start"`
+}
+
+type SetSt struct {
+	Cs string `json:"cs"`
+}
+
+type SSt struct {
+	Set SetSt `json:"set"`
 }
 
 //定义请求变量处理逻辑
 type Request struct {
 	P      PSt    `json:"p"`
+	S 	   SSt    `json:"s"`
 	Type   string `json:"type"`
 	La     string `json:"la"`
 	Qi     string `json:"qi"`
@@ -39,6 +49,8 @@ type DocItem struct {
 	Score  float64   `json:"score"`
 	STATUS string    `json:"STATUS"`
 	AD     time.Time `json:"AD"`
+	ED     string    `json:"ED"`
+	RD     string    `json:"RD"`
 	HOL    []string  `json:"HOL"`
 	NC     []int     `json:"NC"`
 	IMG    string    `json:"IMG"`
