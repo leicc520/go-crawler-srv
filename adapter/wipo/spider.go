@@ -144,13 +144,14 @@ func (s *WipoSt) chromeDpCookie() (*AgentCookieSt, error) {
 			chromedp.ActionFunc(func(ctx context.Context) error {
 				for  {
 					chromedp.Run(ctx, chromedp.OuterHTML("html", &htmlDoc))
-					if !strings.Contains(htmlDoc, "results_navigation bottom_results_navigation displayButtons") {
+					if !strings.Contains(htmlDoc, "results_navigation bottom_results_navigation displayButtons") || !strings.Contains(htmlDoc, "results_navigation top_results_navigation displayButtons") {
 						log.Write(-1, "未检测到切换每页数量的按钮信息...")
 						time.Sleep(time.Second)
 						continue
 					}
 					log.Write(-1, "页检测OK！")
-					time.Sleep(time.Second)
+					log.Write(-1, htmlDoc)
+					time.Sleep(time.Second*10)
 					break
 				}
 				return nil
