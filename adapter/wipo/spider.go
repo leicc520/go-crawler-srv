@@ -43,6 +43,7 @@ type WipoSt struct {
 	Qi        string        `json:"qi"`
 	Qk        string        `json:"qk"`
 	OpRequest int           `json:"op_request"`
+	Error     int           `json:"-"`
 	Success   int           `json:"-"`
 	IsCookie  bool          `json:"-"`
 	ormRs    *apWipoResult  `json:"-"`
@@ -61,7 +62,8 @@ func (s *WipoSt) init()  {
 	var err error = nil
 	s.client = proxy.NewHttpRequest().IsProxy(true)
 	//半小时重新生产一次 浏览器头信息
-	if s.dcpSp == nil || (time.Now().Unix() - s.dcpSp.Stime) > 86400 {
+	if s.Error > 10 || s.dcpSp == nil || (time.Now().Unix() - s.dcpSp.Stime) > 86400 {
+		s.dcpSp = nil
 		//s.dcpSp  = s.getCookieAgent()
 		if s.dcpSp == nil {//取不到养的cookie的情况
 			for {
@@ -78,7 +80,9 @@ func (s *WipoSt) init()  {
 	s.setCookieAgent() //保存cookie信息
 	s.client.SetCookie(wipoBaseURL+"/", s.dcpSp.Cookie)
 	//s.stepInitMatomo(s.dcpSp.EC75)
-	s.stepInitCookie(s.dcpSp.Agent)
+	if err := s.stepInitCookie(s.dcpSp.Agent); err != nil {
+		s.init() //失败的话重新初始化
+	}
 	//s.stepInitSelect() //设置操作
 }
 
@@ -234,7 +238,7 @@ func (s *WipoSt) request(link string, body []byte, method string) (result string
 			log.Write(-1, "请求出现异常，重新加入处理逻辑")
 		}
 		time.Sleep(sleepTime)
-		if nTry > 1000 {//失败太多次了也是走重新初始化的逻辑
+		if nTry > 10 {//失败太多次了也是走重新初始化的逻辑
 			return
 		}
 	}
@@ -258,9 +262,11 @@ func (s *WipoSt) stepInitCookie(agent string) error  {
 	result, _ := s.request(link, nil, http.MethodGet)
 	s.Qk = s.parseQk2QiString(result)
 	if len(s.Qk) < 1 {
+		s.Error++
 		log.Write(-1, "获取首页QK失败")
 		return errors.New("获取首页QK失败")
 	}
+	s.Error   = 0
 	s.Qi = "0-"+s.Qk
 	/*
 		visitorId, err := wipoVisitorUunId(agent)
