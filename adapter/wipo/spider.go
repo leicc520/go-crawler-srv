@@ -151,21 +151,26 @@ func (s *WipoSt) chromeDpCookie() (*AgentCookieSt, error) {
 					}
 					log.Write(-1, "页检测OK！")
 					log.Write(-1, htmlDoc)
-					time.Sleep(time.Second*10)
+					time.Sleep(time.Second)
 					break
 				}
 				return nil
 			}),
-			//start 设置分页60条一页的处理逻辑
-			chromedp.WaitVisible(`//div[@class="results_navigation bottom_results_navigation displayButtons"]`),
-			chromedp.SetAttributeValue(`//div[@id="results"]/div[@class="results_navigation top_results_navigation displayButtons"]`, "class", "results_navigation top_results_navigation displayButtons hover"),
-			chromedp.SetAttributeValue(`//div[@class="rowCountSelectContainer"]/ul[@class="sf-menu sf-js-enabled sf-shadow"]/li[@class="current roundedMenu"]`, "class", "current roundedMenu sfHover"),
-			chromedp.SetAttributeValue(`//div[@class="rowCountSelectContainer"]//ul[@class="narrow"]`, "style", "display:block;visibility:visible;"),
-			chromedp.Sleep(1 * time.Second),
-			chromedp.Click(`//*[@id="results"]/div[1]/div[2]/div[2]/span/div[2]/ul/li/ul/li[3]`),
-			chromedp.Sleep(time.Duration((rand.Intn(5) + rand.Intn(5)) * 1000 * 1000 * 1000)),
-			//chromedp.EvaluateAsDevTools(`document.querySelector("#wipo-int > div.ui-dialog.ui-widget.ui-widget-content.ui-corner-all.ui-front.ui-dialog-buttons.ui-draggable.ui-resizable")`, &dialog),
-			//end
+			chromedp.ActionFunc(func(ctx context.Context) error {
+				//start 设置分页60条一页的处理逻辑
+				chromedp.Run(ctx, chromedp.WaitVisible(`//div[@class="results_navigation bottom_results_navigation displayButtons"]`))
+				chromedp.Run(ctx, chromedp.OuterHTML("html", &htmlDoc))
+				if !strings.Contains(htmlDoc, "results_navigation top_results_navigation displayButtons hover") {
+					chromedp.Run(ctx, chromedp.SetAttributeValue(`//div[@id="results"]/div[@class="results_navigation top_results_navigation displayButtons"]`, "class", "results_navigation top_results_navigation displayButtons hover"))
+				}
+				return chromedp.Run(ctx, chromedp.Tasks{
+					chromedp.SetAttributeValue(`//div[@class="rowCountSelectContainer"]/ul[@class="sf-menu sf-js-enabled sf-shadow"]/li[@class="current roundedMenu"]`, "class", "current roundedMenu sfHover"),
+					chromedp.SetAttributeValue(`//div[@class="rowCountSelectContainer"]//ul[@class="narrow"]`, "style", "display:block;visibility:visible;"),
+					chromedp.Sleep(1 * time.Second),
+					chromedp.Click(`//*[@id="results"]/div[1]/div[2]/div[2]/span/div[2]/ul/li/ul/li[3]`),
+					chromedp.Sleep(time.Duration((rand.Intn(5) + rand.Intn(5)) * 1000 * 1000 * 1000)),
+				})
+			}),
 			chromedp.Sleep(1 * time.Second*3),
 			chromedp.OuterHTML("html", &htmlDoc),
 			chromedp.ActionFunc(func(ctx context.Context) error {
