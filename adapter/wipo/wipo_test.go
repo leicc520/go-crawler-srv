@@ -68,15 +68,11 @@ func TestDate(t *testing.T) {
 
 func TestWipo(t *testing.T) {
 	lib.InitRedis("redis://:@127.0.0.1:6379/1")
-
-
-
 	//初始化数据资料信息
-	//{Url: "", Proxy: "easy-go-http", Status: 1, IFGet: &channal.EasyGoSt{}}
-	//{Url: "", Proxy: "sky-go-http", Status: 1, IFGet: &channal.SkyStartGoSt{}}
-	proxyHost := []proxy.ProxySt{{Url: "", Proxy: "easy-go-http", Status: 1, IFGet: &channal.EasyGoSt{}}}
+	proxyHost := []proxy.ProxySt{{Url: "", Proxy: channal.PROXY_CHANNEL_EASYGO, Status: 1},
+		{Url: "", Proxy: channal.PROXY_CHANNEL_SKYGO, Status: 1}}
 	proxy.Init(proxyHost, lib.Redis)
 	//DevtoolsWs:[]string{"10.71.32.40:9222"}
-	ss := &WipoSt{dpc:&plugins.ChromeDpSt{HeadLess: false, DevtoolsWs:[]string{"127.0.0.1:9222"}}, Country: "US"}
+	ss := &WipoSt{dpc:&plugins.ChromeDpSt{HeadLess: false}, Country: "US"}
 	ss.Run("2020-01-01", "2020-12-31")
 }

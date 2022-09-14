@@ -12,6 +12,10 @@ import (
 type EasyGoSt struct {
 }
 
+func init()  {//注册到注册器当中
+	proxyRegister(PROXY_CHANNEL_EASYGO, &EasyGoSt{})
+}
+
 //获取代理IP 数据资料信息
 func (s EasyGoSt) GetProxy(proto string) string {
 	query := url.Values{}

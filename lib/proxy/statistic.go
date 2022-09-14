@@ -32,17 +32,16 @@ type ProxySt struct {
 	Status int8    `yaml:"status" json:"status"` //状态0-禁用 1-正常 2-锁定
 	IsTcp  bool    `yaml:"-" json:"-"`			 //是否tcp代理
 	Error  uint64  `yaml:"-"      json:"-"`      //请求失败的统计
-	IFGet  channal.IFProxy   `yaml:"-"  json:"-"` //代理请求获取地址
 	Expire int64   `yaml:"-" json:"-"` //锁定时间
 }
 
 //自动切换代理处理逻辑
 func (s *ProxySt) CutProxy()  {
-	ipAddress := s.IFGet.GetProxy(channal.PROXY_SOCK5)
+	ipAddress := channal.GetProxy(s.Proxy, channal.PROXY_SOCK5)
 	if len(ipAddress) > 0 {//请求失败很多更好地址
-		s.Url = "http://"+ipAddress
+		s.Url   = "http://"+ipAddress
+		s.Expire, s.Status, s.IsTcp = 0, 1, true
 	}
-	s.IsTcp = true
 	log.Write(-1, "自动切换IP", ipAddress)
 }
 
@@ -85,7 +84,7 @@ func (s *Statistic) GetProxy(isTcp, isCut bool) string {
 	nlen := len(s.proxy)
 	for i := 0; i < nlen; i++ {
 		item := &s.proxy[i]
-		if (len(item.Url) < 1 || isCut) && item.IFGet != nil {
+		if len(item.Url) < 1 || isCut {
 			item.CutProxy() //切换代理
 		}
 		if isTcp == item.IsTcp {
@@ -257,7 +256,7 @@ func (s *Statistic) Report(idx int, host string, statusCode int)  {
 	s.logChan <- logState.String()
 	if statusCode != http.StatusOK {//请求失败的情况
 		n := atomic.AddUint64(&s.proxy[idx].Error, 1)
-		if n > PROXY_ERROR_LIMIT && s.proxy[idx].IFGet != nil {
+		if n > PROXY_ERROR_LIMIT {
 			(&s.proxy[idx]).CutProxy() //自动切换ip
 			return
 		}
@@ -283,7 +282,7 @@ func (s *Statistic) Proxy() (int, string) {
 	for i := 0; i < s.len; i++ {
 		idx  := int((n+uint64(i))%uint64(s.len))
 		item := &s.proxy[idx]
-		if item.IFGet != nil && len(item.Url) < 1 {
+		if len(item.Url) < 1 {
 			item.CutProxy() //切代理
 		}
 		//状态正常 且解锁的状态 直接处理逻辑即可
@@ -294,5 +293,6 @@ func (s *Statistic) Proxy() (int, string) {
 			return idx, item.Url
 		}
 	}
+	log.Write(-1, "代理全军覆膜，使用本机IP尝试.")
 	return -1, ""
 }

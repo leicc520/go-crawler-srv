@@ -9,11 +9,15 @@ import (
 	"strings"
 )
 
-type SkyStartGoSt struct {
+type SkyGoSt struct {
+}
+
+func init()  {//注册到注册器当中
+	proxyRegister(PROXY_CHANNEL_SKYGO, &SkyGoSt{})
 }
 
 //获取代理IP 数据资料信息
-func (s SkyStartGoSt) GetProxy(proto string) string {
+func (s SkyGoSt) GetProxy(proto string) string {
 	query := url.Values{}
 	query.Set("secret", "1lybseonkysemhod")
 	query.Set("num", "1")
