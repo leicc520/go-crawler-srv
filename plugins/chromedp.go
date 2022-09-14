@@ -4,10 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/leicc520/go-crawler-srv/lib/proxy"
+	"log"
 	"sync/atomic"
 
 	"github.com/chromedp/chromedp"
+	"github.com/leicc520/go-crawler-srv/lib/proxy"
 	logsf "github.com/leicc520/go-orm/log"
 )
 
@@ -16,6 +17,7 @@ type ActionCb func(string, context.Context) (string, error)
 type ChromeDpSt struct {
 	statistic uint64  //统计数值
 	Agent   string    //浏览器
+	IsDebug  bool `json:"is_debug" yaml:"is_debug"`
 	HeadLess bool `json:"head_less" yaml:"head_less"`
 	ProxyUrl string `json:"proxy_url" yaml:"proxy_url"`
 	DevtoolsWs []string `json:"devtools_ws" yaml:"devtools_ws"`
@@ -68,7 +70,10 @@ func (s *ChromeDpSt) Run(url string, taskCb ActionCb) (htmlDoc string, err error
 		aCtx, aCancel = chromedp.NewExecAllocator(context.Background(), s.options()...)
 	}
 	defer aCancel()
-	logDebug := func (format string, v ...interface{}){} //log.Printf
+	logDebug := func (format string, v ...interface{}){}
+	if s.IsDebug {//调式模式的情况
+		logDebug = log.Printf
+	}
 	ctx, rCancel  := chromedp.NewContext(aCtx, chromedp.WithDebugf(logDebug))
 	defer rCancel()
 	htmlDoc, err = taskCb(url, ctx)
