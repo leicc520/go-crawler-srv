@@ -126,6 +126,17 @@ func (s *HttpSt) GetJarCookie(link, name string) string {
 	return ""
 }
 
+//获取所有的cookie信息
+func (s *HttpSt) GetAllCookie(link string) string {
+	u, _    := url.Parse(link)
+	arrStr  := make([]string, 0)
+	cookies := s.cookieJar.Cookies(u)
+	for _, item := range cookies {
+		arrStr = append(arrStr, item.Name+"="+item.Value)
+	}
+	return strings.Join(arrStr, ";")
+}
+
 //返回数据记录信息
 func (s *HttpSt) GetResponse() *http.Response {
 	return s.sp

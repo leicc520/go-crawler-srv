@@ -82,6 +82,7 @@ func (s *WipoSt) init()  {
 func (s *WipoSt) setCookieAgent() {
 	if s.Success > 3 && !s.IsCookie {//将cookie记录，便于日后使用
 		ckey := getCkey("cookie", s)
+		s.dcpSp.Cookie += ";"+s.client.GetAllCookie(wipoBaseURL)
 		body, _ := json.Marshal(s.dcpSp)
 		lib.Redis.LPush(ckey, string(body))
 		s.IsCookie = true
