@@ -52,6 +52,10 @@ type WipoSt struct {
 	client   *proxy.HttpSt  `json:"-"`
 }
 
+func NewWipoSt(country string, dcp *plugins.ChromeDpSt) *WipoSt {
+	return &WipoSt{dpc:dcp, Country: country}
+}
+
 //初始化处理流程
 func (s *WipoSt) init()  {
 	var err error = nil
