@@ -10,8 +10,8 @@ import (
 	"sync/atomic"
 	"time"
 
-    "github.com/leicc520/go-crawler-srv/lib/proxy/channal"
 	"github.com/go-redis/redis"
+	"github.com/leicc520/go-crawler-srv/lib/proxy/channal"
 	"github.com/leicc520/go-orm/log"
 )
 
@@ -257,14 +257,14 @@ func (s *Statistic) Report(idx int, host string, statusCode int)  {
 	s.logChan <- logState.String()
 	if statusCode != http.StatusOK {//请求失败的情况
 		n := atomic.AddUint64(&s.proxy[idx].Error, 1)
+		if n > PROXY_ERROR_LIMIT && s.proxy[idx].IFGet != nil {
+			(&s.proxy[idx]).CutProxy() //自动切换ip
+			return
+		}
 		maxLockTime := time.Second*300
 		if PROXY_ERROR_LOCK_TIME * time.Duration(n) > maxLockTime {
 			s.proxy[idx].Expire = time.Now().UnixNano() + int64(maxLockTime)
 			return //设置最多锁定上线5分钟
-		}
-		if n > PROXY_ERROR_LIMIT && s.proxy[idx].IFGet != nil {
-			(&s.proxy[idx]).CutProxy() //自动切换ip
-			return
 		}
 		if s.proxy[idx].Status == 1 {
 			s.proxy[idx].Expire = time.Now().UnixNano()
