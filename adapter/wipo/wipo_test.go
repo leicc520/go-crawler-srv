@@ -77,5 +77,5 @@ func TestWipo(t *testing.T) {
 	proxyHost := []proxy.ProxySt{{Url: "", Proxy: "easy-go-http", Status: 1, IFGet: &channal.EasyGoSt{}}}
 	proxy.Init(proxyHost, lib.Redis)
 	ss := &WipoSt{dpc:&plugins.ChromeDpSt{HeadLess: false}, Country: "US"}
-	ss.Run("2022-08-01", "2022-08-25")
+	ss.Run("2022-01-01", "2022-09-14")
 }
