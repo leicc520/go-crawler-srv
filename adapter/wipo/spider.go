@@ -141,6 +141,20 @@ func (s *WipoSt) chromeDpCookie() (*AgentCookieSt, error) {
 			chromedp.Sleep(time.Duration(rand.Intn(3))*time.Second),
 			chromedp.Click("//*[@id=\"results\"]/div[1]/div[2]/div[2]/span/div[2]/ul"),
 			chromedp.Sleep(1 * time.Second),
+			chromedp.ActionFunc(func(ctx context.Context) error {
+				for  {
+					chromedp.Run(ctx, chromedp.OuterHTML("html", &htmlDoc))
+					if !strings.Contains(htmlDoc, "results_navigation bottom_results_navigation displayButtons") {
+						log.Write(-1, "未检测到切换每页数量的按钮信息...")
+						time.Sleep(time.Second)
+						continue
+					}
+					log.Write(-1, "页检测OK！")
+					time.Sleep(time.Second)
+					break
+				}
+				return nil
+			}),
 			//start 设置分页60条一页的处理逻辑
 			chromedp.WaitVisible(`//div[@class="results_navigation bottom_results_navigation displayButtons"]`),
 			chromedp.SetAttributeValue(`//div[@id="results"]/div[@class="results_navigation top_results_navigation displayButtons"]`, "class", "results_navigation top_results_navigation displayButtons hover"),
