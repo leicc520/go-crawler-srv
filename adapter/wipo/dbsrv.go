@@ -5,18 +5,6 @@ import (
 	"reflect"
 )
 
-const (
-	DBSRV = "host=10.100.72.102 port=5432 user=postgres password=postgres dbname=zbox sslmode=disable"
-)
-
-//初始化数据库信息
-func init() {
-	master := orm.DbConfig{"postgres", DBSRV, "dbmaster", 128, 64}
-	slaver := orm.DbConfig{"postgres", DBSRV, "dbslaver", 128, 64}
-	orm.InitDBPoolSt().Set(master.SKey, &master)
-	orm.InitDBPoolSt().Set(slaver.SKey, &slaver)
-}
-
 type apWipoBrand struct {
 	*orm.ModelSt
 }
@@ -30,8 +18,8 @@ func newApWipoBrand() *apWipoBrand {
 		"table":		"ap_wipo_brand",
 		"orgtable":		"ap_wipo_brand",
 		"prikey":		"id",
-		"dbmaster":		"dbmaster",
-		"dbslaver":		"dbslaver",
+		"dbmaster":		"wipo_db_master",
+		"dbslaver":		"wipo_db_slaver",
 		"slot":			0,
 	}
 	data := &apWipoBrand{&orm.ModelSt{}}
@@ -52,8 +40,8 @@ func newApWipoResult() *apWipoResult {
 		"table":		"ap_wipo_result",
 		"orgtable":		"ap_wipo_result",
 		"prikey":		"id",
-		"dbmaster":		"dbmaster",
-		"dbslaver":		"dbslaver",
+		"dbmaster":		"wipo_db_master",
+		"dbslaver":		"wipo_db_slaver",
 		"slot":			0,
 	}
 	data := &apWipoResult{&orm.ModelSt{}}

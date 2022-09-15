@@ -9,7 +9,7 @@ require (
 	github.com/antchfx/jsonquery v1.3.0
 	github.com/gin-gonic/gin v1.8.1
 	github.com/go-redis/redis v6.15.9+incompatible
-	github.com/leicc520/go-gin-http v1.0.2
+	github.com/leicc520/go-gin-http v1.0.3
 	github.com/leicc520/go-orm v1.0.1
 	github.com/rabbitmq/amqp091-go v1.4.0
 	github.com/tebeka/selenium v0.9.9

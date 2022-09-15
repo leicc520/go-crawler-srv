@@ -1,0 +1,20 @@
+state:
+    start_date: 2022-01-01
+    end_date: 2022-09-12
+    country: US
+http_proxy:
+chrome_dp:
+  is_debug: true
+  head_less: false
+  devtools_ws:
+  proxy_url:
+wipo_db_master:
+  driver: postgres
+  host: host=10.100.72.102 port=5432 user=postgres password=postgres dbname=zbox sslmode=disable
+  maxOpenConns: 128
+  maxIdleConns: 64
+wipo_db_slaver:
+  driver: postgres
+  host: host=10.100.72.102 port=5432 user=postgres password=postgres dbname=zbox sslmode=disable
+  maxOpenConns: 128
+  maxIdleConns: 64

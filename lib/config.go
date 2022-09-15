@@ -48,15 +48,22 @@ var Config *ConfigSt = nil
 
 //初始化加载配置信息
 func InitConfig() *ConfigSt {
-	workDir, _ := os.Getwd()
-	filePath := fmt.Sprintf("config/%s-%s.yml", NAME, os.Getenv(core.DCENV))
-	filePath  = filepath.Join(workDir, filePath)
 	Config    = &ConfigSt{}
-	micro.LoadFile(filePath, Config)
+	LoadConfigByName(NAME, Config)
 	Config.App.Name    = NAME
 	Config.App.Version = VERSION
 	InitRedis(Config.Redis) //初始化redis连接池
 	amazonConfigLoad("config/amazon.yml")
 	log.SetLogger(Config.Logger.Init())
 	return Config
+}
+
+//通过名称加载配置数据资料信息
+func LoadConfigByName(name string, config interface{}) {
+	workDir, _ := os.Getwd()
+	filePath := fmt.Sprintf("config/%s-%s.yml", name, os.Getenv(core.DCENV))
+	filePath  = filepath.Join(workDir, filePath)
+	if _, err := micro.LoadFile(filePath, config); err != nil {
+		panic("配置加载异常:"+filePath)
+	}
 }

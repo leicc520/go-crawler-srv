@@ -451,10 +451,10 @@ func (s *WipoSt) Run(startDate, endDate string)  {
 		}
 		log.Write(log.INFO, "遍历结束抓取："+s.formatRange()+"的数据")
 		//日期往后挪7天的处理逻辑
-		startDate  := s.RangeDate[1].Add(time.Hour*24)
-		endDate    := startDate.Add(wipo7Days)
-		s.RangeDate = []time.Time{startDate, endDate}
-		if startDate.After(s.EndDate) {
+		nextStartDate  := s.RangeDate[1].Add(time.Hour*24)
+		nextEndDate    := nextStartDate.Add(wipo7Days)
+		s.RangeDate = []time.Time{nextStartDate, nextEndDate}
+		if nextStartDate.After(s.EndDate) {
 			log.Write(log.INFO, s.formatRange(), "数据已经抓取完毕...")
 			break
 		}

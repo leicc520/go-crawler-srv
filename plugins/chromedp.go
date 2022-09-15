@@ -15,12 +15,12 @@ import (
 type ActionCb func(string, context.Context) (string, error)
 
 type ChromeDpSt struct {
-	statistic uint64  //统计数值
-	Agent   string    //浏览器
-	IsDebug  bool `json:"is_debug" yaml:"is_debug"`
-	HeadLess bool `json:"head_less" yaml:"head_less"`
-	ProxyUrl string `json:"proxy_url" yaml:"proxy_url"`
-	DevtoolsWs []string `json:"devtools_ws" yaml:"devtools_ws"`
+	statistic uint64 	`yaml:"-"`  //统计数值
+	Agent   string 		`yaml:"-"`   //浏览器
+	IsDebug  bool 		`yaml:"is_debug"`
+	HeadLess bool 		`yaml:"head_less"`
+	ProxyUrl string 	`yaml:"proxy_url"`
+	DevtoolsWs []string `yaml:"devtools_ws"`
 }
 
 //获取原创的headless
