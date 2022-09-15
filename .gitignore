@@ -3,4 +3,5 @@ go.sum
 *.exe
 cachedir
 cachedir/*
-web.scraper.srv*.yml
+go-crawler-srv*.yml
+go-wipo-cmd*.yml
