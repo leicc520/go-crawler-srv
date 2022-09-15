@@ -15,11 +15,22 @@ import (
  	配置模板参数数据资料信息，只有user-agent是随机的，其他走配置
  */
 
+type PageInfo struct {
+	PageCssPath    []string `yaml:"pageCssPath" json:"pageCssPath"`
+	NextCssPath    []string `yaml:"nextCssPath" json:"nextCssPath"`
+	EndCssPath     []string `yaml:"endCssPath" json:"endCssPath"`
+	IndexCssPath   []string `yaml:"indexCssPath" json:"indexCssPath"`
+	ListCssPath    []string `yaml:"listCssPath" json:"listCssPath"`
+	KeyWordCssPath []string `yaml:"keyWordCssPath" json:"keyWordCssPath"`
+	PageEvent      []string `yaml:"pageEvent" json:"pageEvent"`
+}
+
 type TemplateSt struct{
-	Method    string           `json:"method"   yaml:"method"`
-	Params    string           `json:"params"   yaml:"params"`
-	Headers   proxy.HeaderSt   `json:"headers"  yaml:"headers"`
-	Elements []parse.ElementSt `json:"elements" yaml:"elements"`
+	Method     string            `json:"method"   yaml:"method"`
+	Params     string            `json:"params"   yaml:"params"`
+	Headers    proxy.HeaderSt    `json:"headers"  yaml:"headers"`
+	PageInfo   PageInfo          `json:"pageInfo" yaml:"pageInfo"`
+	DataFields []parse.ElementSt `json:"dataFields" yaml:"dataFields"`
 }
 
 //加载配置数据资料信息
@@ -57,7 +68,7 @@ func (s TemplatesSt) getTemplate(templateName string) []parse.ElementSt {
 		return nil
 	}
 	if tmpl, ok := s[templateName]; ok {
-		return tmpl.Elements
+		return tmpl.DataFields
 	}
 	return nil
 }

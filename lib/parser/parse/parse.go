@@ -2,10 +2,14 @@ package parse
 
 import (
 	"errors"
+	"fmt"
 	"regexp"
+	"strings"
 )
 
 var ErrEmpty = errors.New("要解析的节点数据不存在!")
+var ErrType  = errors.New("类型不支持,无法操作!")
+var ErrNode  = errors.New("节点配置异常,无法解析")
 
 type RegExpParseSt string
 
@@ -23,6 +27,23 @@ type IFCompiler interface {
 	GetParser(nodeType int8) IFNodeParser
 }
 
+
+//将结果转换成slice
+func convertSlice(result interface{}) []string {
+	if aStr, ok := result.([]string); ok {
+		return aStr
+	}
+	aStr := []string{fmt.Sprintf("%v", result)}
+	return aStr
+}
+
+//转换成字符串
+func convertString(result interface{}) string {
+	if aStr, ok := result.([]string); ok {
+		return strings.Join(aStr, "\r\n")
+	}
+	return fmt.Sprintf("%v", result)
+}
 
 //获取节点的数据资料信息
 func (s RegExpParseSt) InnerText(expr string) (text string, err error) {

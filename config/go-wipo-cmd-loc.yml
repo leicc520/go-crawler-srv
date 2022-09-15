@@ -10,11 +10,11 @@ chrome_dp:
   proxy_url:
 wipo_db_master:
   driver: postgres
-  host: host=xxx.xxx.xxx.xxx port=5432 user=postgres password=postgres dbname=xxx sslmode=disable
+  host: host=10.100.72.102 port=5432 user=postgres password=postgres dbname=xxx sslmode=disable
   maxOpenConns: 128
   maxIdleConns: 64
 wipo_db_slaver:
   driver: postgres
-  host: host=xxx.xxx.xxx.xxx port=5432 user=postgres password=postgres dbname=xxx sslmode=disable
+  host: host=10.100.72.102 port=5432 user=postgres password=postgres dbname=xxx sslmode=disable
   maxOpenConns: 128
   maxIdleConns: 64

@@ -7,7 +7,7 @@ import (
 )
 
 func TestXPathTest(t *testing.T) {
-	os.Chdir("../")
+	os.Chdir("../../")
 	dir, err := os.Getwd()
 	fmt.Println(dir, err)
 
@@ -16,9 +16,8 @@ func TestXPathTest(t *testing.T) {
 
 	fmt.Printf("%+v", tt)
 	link := "https://blog.sina.com.cn/s/blog_41772a550102zami.html?tj=1"
-
 	//return
 	doc := tt.Crawling(link)
-	item, err := NewCompiler(doc).Parse(tt.Elements)
+	item, err := NewCompiler(doc).Parse(tt.DataFields)
 	fmt.Printf("%+v %+v", item, err)
 }

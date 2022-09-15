@@ -1,41 +1,57 @@
 method: get
 params:
 headers:
-  - key: cache-control
+  -
+    key: cache-control
     value: max-age=0
   -
     key: accept-language
     value: zh-CN,zh;q=0.9
-elements:
+pageInfo:
+  pageCssPath:
+    - .a-section.a-text-center.s-pagination-container
+  nextCssPath:
+    - span.s-pagination-strip a.s-pagination-item.s-pagination-next
+  endCssPath:
+    - .s-pagination-item.s-pagination-next.s-pagination-disabled[aria-disabled="true"]
+  indexCssPath:
+    - .s-pagination-container span.s-pagination-item.s-pagination-selected
+  listCssPath:
+    - '[data-component-type="s-search-result"]'
+  keyWordCssPath:
+    - '[data-component-type="s-result-info-bar"] .a-color-state.a-text-bold'
+  pageEvent:
+    - click
+dataFields:
   -
     tag: title
-    nodes:
-      -
-        name: 标题节点
-        temp: //*[@id="t_41772a550102zami"]
-        crawl_type: 1
-        node_type: 1
+    name: 标题节点
+    xPath:
+      - //*[@id="t_41772a550102zami"]
+    cssPath:
+      - #t_41772a550102zami
+    type: TEXT
   -
     tag: content
-    nodes:
-      -
-        name: 内容节点
-        temp: //*[@id="sina_keyword_ad_area2"]/div[2]
-        crawl_type: 1
-        node_type: 1
+    name: 内容节点
+    xPath:
+      - //*[@id="sina_keyword_ad_area2"]/div[2]
+    cssPath:
+      - #sina_keyword_ad_area2
+    type: TEXT
   -
     tag: like
-    nodes:
-      -
-        name: 喜欢节点
-        temp: //*[@id="dbox2_41772a550102zami"]
-        crawl_type: 1
-        node_type: 1
+    name: 喜欢节点
+    xPath:
+      - //*[@id="dbox2_41772a550102zami"]
+    cssPath:
+      - #dbox2_41772a550102zami
+    type: TEXT
   -
     tag: goldpen
-    nodes:
-      -
-        name: 赠金笔
-        temp: //*[@id="goldPan-num"]
-        crawl_type: 1
-        node_type: 1
+    name: 赠金笔
+    xPath:
+      - //*[@id="goldPan-num"]
+    cssPath:
+      - #goldPan-num
+    type: TEXT

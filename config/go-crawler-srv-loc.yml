@@ -17,22 +17,16 @@ aqm_queue:
   auto_ack: false
   auto_delete: false
 chrome_dp:
-  retry: 3
-  head_less: true
+  is_debug: true
+  head_less: false
   devtools_ws:
   proxy_url:
 http_proxy:
   -
-    proxy: oktest
-    url: http://xxx.xxx.xxx.xxx:50000
+    proxy: demoTest
+    url: http://147.185.238.169:50000
     status: 1
 spider_service:
   chrome_dp_con_currency: 10
   spider_con_currency: 10
-  job_con_currency: 100
-parser_service:
-  parser_con_currency: 10
-  job_con_currency: 100
-dispatcher_service:
-  dispatcher_con_currency: 10
   job_con_currency: 100
