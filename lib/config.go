@@ -2,6 +2,7 @@ package lib
 
 import (
 	"fmt"
+	"github.com/leicc520/go-orm"
 	"os"
 	"path/filepath"
 
@@ -22,26 +23,20 @@ type ConfigSt struct {
 	Logger   log.LogFileSt	   		`yaml:"logger"`
 	Redis    string                 `yaml:"redis"`
 	AQMQueue queue.RabbitMqSt       `yaml:"aqm_queue"`
+	SpiderDbMaster orm.DbConfig 	`yaml:"spider_db_master"`
+	SpiderDbSlaver orm.DbConfig 	`yaml:"spider_db_slaver"`
 	ChromeDp struct {
-		ReTry     int `json:"retry" yaml:"retry"`
-		HeadLess bool `json:"head_less" yaml:"head_less"`
-		ProxyUrl string `json:"proxy_url" yaml:"proxy_url"`
-		DevtoolsWs []string `json:"devtools_ws" yaml:"devtools_ws"`
+		ReTry     int 				`yaml:"retry"`
+		HeadLess bool 				`yaml:"head_less"`
+		ProxyUrl string 			`yaml:"proxy_url"`
+		DevtoolsWs []string 		`yaml:"devtools_ws"`
 	}	  	 						`yaml:"chrome_dp"`
 	HttpProxy []proxy.ProxySt   	`yaml:"http_proxy"`
 	SpiderService struct{
-		JobConCurrency      	int     `yaml:"job_con_currency"`
-		ChromeDpConCurrency 	int     `yaml:"chrome_dp_con_currency"`
-		SpiderConCurrency   	int     `yaml:"spider_con_currency"`
-	}  `yaml:"spider_service"`
-	ParserService struct{
-		JobConCurrency      	int     `yaml:"job_con_currency"`
-		ParserConCurrency   	int     `yaml:"parser_con_currency"`
-	}  `yaml:"parser_service"`
-	DispatcherService struct{
-		JobConCurrency      	int     `yaml:"job_con_currency"`
-		DispatcherConCurrency   int     `yaml:"dispatcher_con_currency"`
-	}  `yaml:"dispatcher_service"`
+		JobConCurrency      int     `yaml:"job_con_currency"`
+		ChromeDpConCurrency int     `yaml:"chrome_dp_con_currency"`
+		SpiderConCurrency   int     `yaml:"spider_con_currency"`
+	} 								`yaml:"spider_service"`
 }
 
 var Config *ConfigSt = nil
@@ -55,6 +50,7 @@ func InitConfig() *ConfigSt {
 	InitRedis(Config.Redis) //初始化redis连接池
 	amazonConfigLoad("config/amazon.yml")
 	log.SetLogger(Config.Logger.Init())
+	orm.InitDBPoolSt().LoadDbConfig(Config) //配置数据库结构注册到数据库调用配置当中
 	return Config
 }
 
