@@ -2,13 +2,13 @@ package dbsrv
 
 import (
 	"fmt"
-	"github.com/leicc520/go-crawler-srv/service/dbsrv/spider/models"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/leicc520/go-crawler-srv/lib"
+	"github.com/leicc520/go-crawler-srv/service/dbsrv/spider/models"
 	"github.com/leicc520/go-orm"
 	_ "github.com/lib/pq"
 )
@@ -19,7 +19,7 @@ func init() {
 }
 
 func TestOrmDemo(t *testing.T) {
-	sorm := models.NewSpAmazonAsin()
+	sorm   := models.NewSpAmazonAsin()
 	fields := orm.SqlMap{"asin":"11111", "updated_at":time.Now().Format(orm.DATEBASICFormat), "created_at":time.Now().Format(orm.DATEBASICFormat)}
 	autoid := sorm.NewOne(fields, nil)
 	fmt.Println(autoid)
