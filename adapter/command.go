@@ -33,17 +33,20 @@ func CommandCmd() {
 		arrStr  = append(arrStr, key)
 	}
 	usage := "请输入要执行的命令行["+strings.Join(arrStr, ",")+"],all-开启所有任务..."
-	flag.StringVar(&commandStr,"cmd", "all", usage)
+	flag.StringVar(&commandStr,"cmd", "", usage)
 }
 
 //执行业务逻辑
 func Run() bool {
+	if len(commandStr) < 1 {//默认不开启脚本
+		return true
+	}
 	if cmd, ok := command[commandStr]; ok {
 		cmd.Run() //执行业务处理逻辑
 		return false
 	}
-	if strings.ToLower(commandStr) != "all" {
-		panic("未找到要执行的命令行："+commandStr)
+	if commandStr != "all" {
+		panic("cmd执行命令不存在哟!")
 	}
 	//如果没有设置的话开启做个业务
 	for _, cmd := range command {
