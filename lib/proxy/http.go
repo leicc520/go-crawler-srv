@@ -27,6 +27,7 @@ type HttpSt struct {
 	sp           *http.Response
 	query        url.Values
 	isRedirect   bool
+	monitor      *Monitor
 	proxy        string
 	proxyIndex   int   //代理索引
 	isProxy      bool  //是否开启自动代理
@@ -40,10 +41,16 @@ func CancelRedirect(_ *http.Request, _ []*http.Request) error {
 	return http.ErrUseLastResponse
 }
 
-func NewHttpRequest() *HttpSt {
+func NewHttpRequest(monitor *Monitor) *HttpSt {
 	cookieJar, _ := cookiejar.New(nil)
 	return &HttpSt{query: url.Values{}, isRedirect: true, header: nil, proxyIndex: -1,
-		timeout: 120 * time.Second, cookieJar: cookieJar}
+		timeout: 120 * time.Second, cookieJar: cookieJar, monitor: monitor}
+}
+
+//设置代理监控，从这里获得代理
+func (s *HttpSt) SetMonitor(monitor *Monitor) *HttpSt {
+	s.monitor = monitor
+	return s
 }
 
 //设置请求的header业务数据信息
@@ -267,8 +274,8 @@ func (s *HttpSt) CloseProxy()  {
 //代理池中自动获取代理
 func (s *HttpSt) autoSetProxy()  {
 	//开启了自动代理，且未设置代理的情况
-	if s.isProxy && len(s.proxy) < 1 && statPtr != nil {
-		s.proxyIndex, s.proxy = statPtr.Proxy()
+	if s.isProxy && len(s.proxy) < 1 && s.monitor != nil {
+		s.proxyIndex, s.proxy = s.monitor.Proxy()
 		if s.proxyIndex >= 0 && len(s.proxy) > 0 {
 			s.Proxy(s.proxy)
 			log.Write(log.INFO, "设置代理请求:"+s.proxy)
@@ -398,12 +405,12 @@ func (s *HttpSt) Request(url string, body []byte, method string) (result string,
 		client.CheckRedirect = CancelRedirect
 	}
 	s.sp, err = client.Do(req)
-	if statPtr != nil {//如果设置了监控逻辑
+	if s.monitor != nil {//如果设置了监控逻辑
 		statusCode := -1
 		if s.sp != nil {
 			statusCode = s.sp.StatusCode
 		}
-		statPtr.Report(s.proxyIndex, req.Host, statusCode)
+		s.monitor.Report(s.proxyIndex, req.Host, statusCode)
 	}
 	if err != nil || s.sp == nil {
 		s.CloseProxy() //失败的情况关闭
