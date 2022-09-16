@@ -42,6 +42,11 @@ func Init(proxy []ProxySt, rds *redis.Client) {
 	})
 }
 
+//设置注册代理监控
+func SetMonitor(name string, monitor *Monitor) {
+	monitorState[name] = monitor
+}
+
 //返回统计数据资料信息
 func GetMonitor(name string) *Monitor {
 	if len(name) < 1 {

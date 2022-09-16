@@ -41,10 +41,10 @@ func CancelRedirect(_ *http.Request, _ []*http.Request) error {
 	return http.ErrUseLastResponse
 }
 
-func NewHttpRequest(monitor *Monitor) *HttpSt {
+func NewHttpRequest() *HttpSt {
 	cookieJar, _ := cookiejar.New(nil)
 	return &HttpSt{query: url.Values{}, isRedirect: true, header: nil, proxyIndex: -1,
-		timeout: 120 * time.Second, cookieJar: cookieJar, monitor: monitor}
+		timeout: 120 * time.Second, cookieJar: cookieJar}
 }
 
 //设置代理监控，从这里获得代理

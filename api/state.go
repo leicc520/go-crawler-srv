@@ -15,7 +15,7 @@ func proxyState(c *gin.Context)  {
 		return
 	}
 	//为开启代理监控
-	ss := proxy.GetStatistic()
+	ss := proxy.GetMonitor(proxy.PROXY_DEFUALT_NAME)
 	if ss == nil || len(lib.Config.HttpProxy) < 1 {
 		core.PanicHttpError(401, "未开启代理监控.")
 	}

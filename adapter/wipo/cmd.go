@@ -12,6 +12,7 @@ import (
 const (
 	Name = "go-wipo-cmd"
 	CMD  = "wipo"
+	PROXY= "wipo-proxy"
 )
 
 type goWipoCmd struct {
@@ -46,7 +47,8 @@ func (s *goWipoCmd) Run() {
 	log.Write(-1, "开启执行命令行:"+CMD)
 	wState = &configSt{}
 	lib.LoadConfigByName(Name, wState)
-	proxy.Init(wState.HttpProxy, lib.Redis)
+	proxy.Init(nil, lib.Redis)
+	proxy.SetMonitor(PROXY, proxy.NewMonitor(wState.HttpProxy))
 	ss := &WipoSt{dpc:&wState.ChromeDp, Country: wState.State.Country}
 	orm.InitDBPoolSt().Set("wipo_db_master", &wState.DbMaster)
 	orm.InitDBPoolSt().Set("wipo_db_slaver", &wState.DbSlaver)

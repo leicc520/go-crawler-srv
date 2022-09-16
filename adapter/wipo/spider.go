@@ -60,7 +60,8 @@ func NewWipoSt(country string, dcp *plugins.ChromeDpSt) *WipoSt {
 //初始化处理流程
 func (s *WipoSt) init()  {
 	var err error = nil
-	s.client = proxy.NewHttpRequest().IsProxy(true)
+	monitor := proxy.GetMonitor(PROXY)
+	s.client = proxy.NewHttpRequest().IsProxy(true).SetMonitor(monitor)
 	//半小时重新生产一次 浏览器头信息
 	if s.Error > 10 || s.dcpSp == nil || (time.Now().Unix() - s.dcpSp.Stime) > 86400 {
 		s.dcpSp = nil
@@ -116,7 +117,8 @@ func (s *WipoSt) getCookieAgent() *AgentCookieSt {
 //生成chromeDpCookie信息
 func (s *WipoSt) chromeDpCookie() (*AgentCookieSt, error) {
 	//切换代理的处理逻辑
-	s.dpc.ProxyUrl = proxy.GetStatistic().GetProxy(true, true)
+	monitor := proxy.GetMonitor(PROXY)
+	s.dpc.ProxyUrl = monitor.GetProxy(true, true)
 	url := wipoBaseURL+"/branddb/en/#"
 	sp  := &AgentCookieSt{}
 	cookieStr, htmlDoc := make([]string, 0), ""
