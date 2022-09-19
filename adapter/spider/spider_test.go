@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/leicc520/go-crawler-srv/lib"
 	"github.com/leicc520/go-crawler-srv/lib/parser"
+	"github.com/leicc520/go-crawler-srv/lib/parser/parse"
 	"github.com/leicc520/go-orm/cache"
 	"os"
 	"testing"
@@ -22,11 +23,12 @@ func init() {
 }
 
 func TestSeller(t *testing.T) {
+	parse.IsDebug = true
 	tt := parser.TemplateSt{Request: &parser.BaseRequest{}}
 	err:= tt.LoadFile("./config/template/amazon-seller.yml")
 	fmt.Println(err)
 	fmt.Printf("%+v %+v", tt.Request, tt)
-	link := "https://www.amazon.com/sp?ie=UTF8&seller=ADJ8GJXNTQ637&asin=B004809ITC&ref_=dp_merchant_link&isAmazonFulfilled=1"
+	link := "https://www.amazon.com/sp?ie=UTF8&seller=A10HLORM3B3SKO&language=en_US"
 	result, err := tt.Request.Do(link)
 	fmt.Println(err)
 	item, err := parser.NewCompiler(result).Parse(tt.DataFields)
