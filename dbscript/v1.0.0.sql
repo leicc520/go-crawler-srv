@@ -20,7 +20,4 @@ comment on column sys_activation_code.expire_time is '过期时间';
 
 
 
-create sequence sys_activation_code_id_seq as integer;
-
-alter sequence sys_activation_code_id_seq owned by sys_activation_code.id;
 
