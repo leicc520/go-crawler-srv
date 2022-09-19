@@ -12,8 +12,10 @@ dataFields:
   -
     tag: language
     name: 语言
+    matchIdx: 1
+    matchReg: '"(.+?)"'
     regexp:
-      - 'language: "(.+?)"'
+      - 'language:[\s]?"(.+?)"'
     type: TEXT
   -
     tag: seller_name
@@ -25,14 +27,26 @@ dataFields:
   -
     tag: star
     name: 卖家星级
+    matchIdx: -1
+    matchReg: '\d+\.\d+|\d+'
     xPath:
       - //div[contains(@id, 'seller-feedback-summary')]//i/span
     type: TEXT
   -
     tag: favorite
     name: 正面评价
+    matchIdx: -1
+    matchReg: '\d+%|\d+％'
     xPath:
       - //div[contains(@id, 'seller-feedback-summary')]//a/b
+    type: TEXT
+  -
+    tag: rating
+    name: 评星级数
+    matchIdx: 1
+    matchReg: '\(([\d]+)'
+    xPath:
+      - //div[contains(@id, 'seller-feedback-summary')]//a
     type: TEXT
   -
     tag: introduce
@@ -46,20 +60,56 @@ dataFields:
     tag: shipping
     name: 物流规则
     xPath:
-      - //div[@id='shippingRatesFeature']/p|//*[@id='shipping-policies']
+      - //div[@id='shippingRatesFeature']
+      - //*[@id="spp-accordion-shipping-policies"]/div/div
+      - //*[@id='shipping-policies']
     type: TEXT
+  -
+    tag: business_name
+    name: 公司名称
+    xPath:
+      - //*[@id="page-section-detail-seller-info"]/div/div/div/div[2]/span[2]
+    type: TEXT
+  -
+    tag: business_address
+    name: 公司地址
+    xPath:
+      - //*[@id="page-section-detail-seller-info"]/div/div/div
+    type: TEXT
+    children:
+        -
+          tag: business_address
+          name: 公司地址
+          cssPath:
+            - '.indent-left span'
+          type: LIST
   -
     tag: feedback
     name: 意见反馈
     xPath:
       - //table[@id='feedback-summary-table']
     type: TEXT
-  -
-    tag: information
-    name: 卖家信息
-    xPath:
-      - //div[@id='page-section-detail-seller-info']//div[contains(@class, 'a-row a-spacing-none')]
-    type: TEXT
+    children:
+      - tag: positive
+        name: 好评
+        xPath:
+          - //*[@id="feedback-summary-table"]/tbody/tr[2]/td[contains(@class, 'a-text-right')]
+        type: LIST
+      - tag: neutral
+        name: 中评
+        xPath:
+          - //*[@id="feedback-summary-table"]/tbody/tr[3]/td[contains(@class, 'a-text-right')]
+        type: LIST
+      - tag: negative
+        name: 差评
+        xPath:
+          - //*[@id="feedback-summary-table"]/tbody/tr[4]/td[contains(@class, 'a-text-right')]
+        type: LIST
+      - tag: count
+        name: 计数
+        xPath:
+          - //*[@id="feedback-summary-table"]/tbody/tr[5]/td[contains(@class, 'a-text-right')]
+        type: LIST
   -
     tag: contact
     name: 联系电话
