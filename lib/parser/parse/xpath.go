@@ -2,6 +2,7 @@ package parse
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/antchfx/htmlquery"
@@ -48,9 +49,18 @@ func (s *XPathParseSt) InnerText(expr string) (text string, err error) {
 		err = ErrEmpty
 		return
 	} else {
-		text = strings.TrimSpace(htmlquery.InnerText(node))
+		isSelf := s.isTable(expr)
+		text = strings.TrimSpace(htmlquery.OutputHTML(node, isSelf))
 		return
 	}
+}
+
+//是否表table-如果是则取外围的table
+func (s *XPathParseSt) isTable(expr string) bool {
+	if ok, _ := regexp.MatchString(`//table\[[^\]]+\]`, expr); ok {
+		return true
+	}
+	return false
 }
 
 //获取节点数据 数组切片列表
@@ -60,8 +70,9 @@ func (s *XPathParseSt) InnerTexts(expr string) (texts []string, err error) {
 	if err != nil {
 		return
 	}
+	isSelf := s.isTable(expr)
 	for _, node := range nodes {
-		texts = append(texts, strings.TrimSpace(htmlquery.InnerText(node)))
+		texts = append(texts, strings.TrimSpace(htmlquery.OutputHTML(node, isSelf)))
 	}
 	return
 }

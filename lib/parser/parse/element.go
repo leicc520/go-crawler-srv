@@ -2,6 +2,7 @@ package parse
 
 import (
 	"errors"
+	"fmt"
 	"regexp"
 	"strings"
 
@@ -25,15 +26,16 @@ const (
 
 //元素节点提取配置，便利模板节点直到知道数据才结束
 type ElementSt struct {
-	Tag   string 	  `json:"tag" yaml:"tag"` 	   //提取之后放到这个名字的map当中
-	Name  string  	  `json:"name" yaml:"name"`	   //元素节点名称
+	Tag   	string 	  `json:"tag" yaml:"tag"` 	   //提取之后放到这个名字的map当中
+	Name  	string  	  `json:"name" yaml:"name"`	   //元素节点名称
 	XPath 	[]string  `json:"xPath" yaml:"xPath"`
 	CssPath []string  `json:"cssPath" yaml:"cssPath"`
 	Json    []string  `json:"json"  yaml:"json"`
 	Regexp  []string  `json:"regexp" yaml:"regexp"`
+	MatchIdx int      `json:"matchIdx" yaml:"matchIdx"`
 	MatchReg string   `json:"matchReg" yaml:"matchReg"`
 	Type 	string 	  `json:"type" yaml:"type"`
-	Elements []ElementSt `json:"elements" yaml:"elements"`  //允许递归的获取元素，在当前解析节点继续解析
+	Children []ElementSt `json:"children" yaml:"children"`  //允许递归的获取元素，在当前解析节点继续解析
 }
 
 //格式化成字符串输出数据
@@ -60,28 +62,39 @@ func (s ElementSt) RunParse(t IFCompiler, result orm.SqlMap) error {
 	if err != nil {
 		return err
 	}
+	isTagValue := false
 	//判断是否继续匹配逻辑
-	if s.Elements != nil && len(s.Elements) > 0 {
+	if s.Children != nil && len(s.Children) > 0 {
 		aStr := convertSlice(value)
-		list := make([]orm.SqlMap, 0)
 		for _, doc := range aStr {
 			//在每个匹配节点下接续查找数据
-			newCP:= t.Clone(doc)
-			item := orm.SqlMap{}
-			for _, el := range s.Elements {
-				err = el.RunParse(newCP, item)
+			newCP := t.Clone(doc)
+			items := orm.SqlMap{}
+			for _, el := range s.Children {
+				err = el.RunParse(newCP, items)
 				if err != nil {
 					return err
 				}
 			}
-			if len(item) > 0 {
-				list = append(list, item)
+			if len(items) > 0 {//元素数据的组织形式
+				result[s.Tag] = items
+				for key, val := range items {
+					if key == s.Tag && len(items) == 1 {
+						result[s.Tag] = val
+						break
+					}
+				}
+				isTagValue = true
 			}
 		}
-		value = list
 	}
 	//记录匹配结果到map当中 为空的字段忽略不返回
-	if len(s.Tag) > 0 && s.Tag != "-" {
+	if len(s.Tag) > 0 && !isTagValue {
+		value = stripTags(value)
+		if IsDebug {//调试模式
+			fmt.Printf("%+v: %+v \r\n", s.Tag, value)
+		}
+		log.Write(log.INFO, s.Name, s.Tag, value)
 		result[s.Tag] = value
 	}
 	return nil
@@ -109,9 +122,16 @@ func (s ElementSt) getValue(t IFCompiler) (value interface{}, err error) {
 //正则提取逻辑
 func (s ElementSt) regFilter(result string) (string, error)  {
 	if reg, err := regexp.Compile(s.MatchReg); err == nil {
-		str := reg.FindString(result)
-		if len(str) > 0 {
-			return str, nil
+		if s.MatchIdx == -1 {
+			str := reg.FindString(result)
+			if len(str) < 1 {
+				err = errors.New("正则解析数据不存在")
+			}
+			return str, err
+		}
+		arrStr := reg.FindStringSubmatch(result)
+		if len(arrStr) >= s.MatchIdx  {
+			return arrStr[s.MatchIdx], nil
 		}
 	}
 	return "", errors.New("过滤器未生效:"+s.MatchReg)

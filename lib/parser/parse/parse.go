@@ -3,13 +3,18 @@ package parse
 import (
 	"errors"
 	"fmt"
+	"github.com/leicc520/go-crawler-srv/lib"
 	"regexp"
 	"strings"
 )
 
-var ErrEmpty = errors.New("要解析的节点数据不存在!")
-var ErrType  = errors.New("类型不支持,无法操作!")
-var ErrNode  = errors.New("节点配置异常,无法解析")
+var (
+	IsDebug = false
+
+	ErrEmpty = errors.New("要解析的节点数据不存在!")
+	ErrType  = errors.New("类型不支持,无法操作!")
+	ErrNode  = errors.New("节点配置异常,无法解析")
+)
 
 type RegExpParseSt string
 
@@ -43,6 +48,20 @@ func convertString(result interface{}) string {
 		return strings.Join(aStr, "\r\n")
 	}
 	return fmt.Sprintf("%v", result)
+}
+
+//过滤标签处理逻辑
+func stripTags(result interface{}) interface{} {
+	if lStr, ok := result.(string); ok {
+		return lib.StripTags(lStr)
+	}
+	if aStr, ok := result.([]string); ok {
+		for idx, lStr := range aStr {
+			aStr[idx] = lib.StripTags(lStr)
+		}
+		return aStr
+	}
+	return result
 }
 
 //获取节点的数据资料信息
