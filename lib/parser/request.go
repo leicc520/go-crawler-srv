@@ -111,7 +111,9 @@ func (r *BaseRequest) Do(link string) (string, error) {
 		client.SetHeader(r.Header)
 	}
 	result, err = client.Request(r.Url, []byte(r.Params), r.Method)
+	//返回的内容检测不到关键词，记录异常
 	if err == nil && len(result) > 0 && !r.isRegMatch(result) {
+		lib.LogActionOnce("web@"+lib.Md5Str(result), 86400, result)
 		err = errUnknownPage
 	}
 	//过滤一下空格处理逻辑
