@@ -3,6 +3,7 @@ package models
 import (
 	"github.com/leicc520/go-orm"
 	"reflect"
+	"time"
 )
 
 type SpAmazonAsin struct {
@@ -15,8 +16,8 @@ type SpAmazonAsinSt struct {
 	Asin		string		`json:"asin"`		
 	Version		string		`json:"version"`		
 	Json		string		`json:"json"`		
-	UpdatedAt		string		`json:"updated_at"`		
-	CreatedAt		string		`json:"created_at"`		
+	UpdatedAt		time.Time		`json:"updated_at"`		
+	CreatedAt		time.Time		`json:"created_at"`		
 }
 
 //这里默认引用全局的连接池句柄
@@ -26,8 +27,8 @@ func NewSpAmazonAsin() *SpAmazonAsin {
 		"asin":		reflect.String,		//唯一编号
 		"version":		reflect.String,		//解析器版本
 		"json":		reflect.String,		//采集数据
-		"updated_at":		reflect.String,		//更新时间
-		"created_at":		reflect.String,		//创建时间
+		"updated_at":		orm.DT_TIMESTAMP,		//更新时间
+		"created_at":		orm.DT_TIMESTAMP,		//创建时间
 	}
 	
 	args  := map[string]interface{}{

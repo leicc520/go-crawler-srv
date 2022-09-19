@@ -29,5 +29,5 @@ func Router(c *gin.Engine) {
 	state.GET("proxy", proxyState)
 	api := c.Group("api")
 	api.POST("/task/create", taskCreate)
-	api.POST("/activation/active", activationCode)
+	api.POST("/code/active", activeCode)
 }

@@ -1,8 +1,9 @@
 package models
 
 import (
-	"reflect"
 	"github.com/leicc520/go-orm"
+	"reflect"
+	"time"
 )
 
 type SysActivationCode struct {
@@ -11,23 +12,23 @@ type SysActivationCode struct {
 
 //结构体实例的结构说明
 type SysActivationCodeSt struct {
-	Id		int		`json:"id"`		
-	Status		string		`json:"status"`		
 	Code		string		`json:"code"`		
-	ActivateTime		string		`json:"activate_time"`		
-	CreateTime		string		`json:"create_time"`		
-	ExpireTime		string		`json:"expire_time"`		
+	ActivateTime		time.Time		`json:"activate_time"`		
+	CreateTime		time.Time		`json:"create_time"`		
+	ExpireTime		time.Time		`json:"expire_time"`		
+	Id		int64		`json:"id"`		
+	Status		int		`json:"status"`		
 }
 
 //这里默认引用全局的连接池句柄
 func NewSysActivationCode() *SysActivationCode {
 	fields := map[string]reflect.Kind{
-		"id":		reflect.Int,		//
-		"status":		reflect.String,		//是否激活 默认未激活
 		"code":		reflect.String,		//激活码
-		"activate_time":		reflect.String,		//激活时间
-		"create_time":		reflect.String,		//激活码生成时间
-		"expire_time":		reflect.String,		//过期时间
+		"activate_time":		orm.DT_TIMESTAMP,		//激活时间
+		"create_time":		orm.DT_TIMESTAMP,		//激活码生成时间
+		"expire_time":		orm.DT_TIMESTAMP,		//过期时间
+		"id":		reflect.Int64,		//记录ID
+		"status":		reflect.Int,		//状态 0-待激活 1-已激活
 	}
 	
 	args  := map[string]interface{}{

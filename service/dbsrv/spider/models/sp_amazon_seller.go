@@ -2,6 +2,7 @@ package models
 
 import (
 	"reflect"
+	"time"
 	"github.com/leicc520/go-orm"
 )
 
@@ -14,8 +15,8 @@ type SpAmazonSellerSt struct {
 	Id		int64		`json:"id"`		
 	SellerId		string		`json:"seller_id"`		
 	Json		string		`json:"json"`		
-	UpdatedAt		string		`json:"updated_at"`		
-	CreatedAt		string		`json:"created_at"`		
+	UpdatedAt		time.Time		`json:"updated_at"`		
+	CreatedAt		time.Time		`json:"created_at"`		
 	Version		string		`json:"version"`		
 }
 
@@ -25,8 +26,8 @@ func NewSpAmazonSeller() *SpAmazonSeller {
 		"id":		reflect.Int64,		//记录ID
 		"seller_id":		reflect.String,		//卖家ID
 		"json":		reflect.String,		//抓取的json
-		"updated_at":		reflect.String,		//更新时间
-		"created_at":		reflect.String,		//创建时间
+		"updated_at":		orm.DT_TIMESTAMP,		//更新时间
+		"created_at":		orm.DT_TIMESTAMP,		//创建时间
 		"version":		reflect.String,		//解析器版本
 	}
 	
