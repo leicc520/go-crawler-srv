@@ -351,7 +351,8 @@ func (s *WipoSt) genSelectQZParams() string {
 	dtStr     := "["+startDate+" TO "+endDate+"]"
 	sq1 := SqSt{Dt: dtStr, Fi: "AD", Te: "["+startDate+"T00:00:00Z TO "+endDate+"T23:59:59Z]"}
 	sq2 := SqSt{Dt: "", Fi:"OO", Te: s.Country} //限制只要美国
-	s.qz.P.Search = SearchSt{Sq: []SqSt{sq1, sq2}}
+	Fq1 := FqSt{Fi: "STATUS", Te: "DEL", Co: "OR", Dt: "INA"}
+	s.qz.P.Search = SearchSt{Sq: []SqSt{sq1, sq2}, Fq: []FqSt{Fq1}}
 	s.qz.Qi       = s.Qi
 	s.qz.P.Start  = s.IndexPage * wipoPageSize //计算已经到了第几页
 	body, _ := json.Marshal(s.qz)

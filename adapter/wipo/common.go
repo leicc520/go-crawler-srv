@@ -14,8 +14,16 @@ type SqSt struct {
 	Dt string `json:"dt"`
 }
 
+type FqSt struct {
+	Fi string `json:"fi"`
+	Te string `json:"te"`
+	Co string `json:"co"`
+	Dt string `json:"dt"`
+}
+
 type SearchSt struct {
 	Sq []SqSt `json:"sq"`
+	Fq []FqSt `json:"fq"`
 }
 
 type PSt struct {
