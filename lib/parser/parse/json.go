@@ -35,7 +35,7 @@ func (s *JsonParseSt) InnerText(expr string) (text string, err error) {
 		err = ErrEmpty
 		return
 	}
-	text = node.InnerText()
+	text = strings.TrimSpace(node.InnerText())
 	return
 }
 
@@ -47,7 +47,7 @@ func (s *JsonParseSt) InnerTexts(expr string) (texts []string, err error) {
 	}
 	texts  = make([]string, 0)
 	for _, node := range nodes {
-		texts = append(texts, node.InnerText())
+		texts = append(texts, strings.TrimSpace(node.InnerText()))
 	}
 	return
 }

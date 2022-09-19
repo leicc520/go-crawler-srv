@@ -80,7 +80,7 @@ func (s *XPathParseSt) ParseTable(expr string) (table [][]string, err error) {
 			return
 		}
 		for _, cell := range cells {
-			rows = append(rows, strings.TrimSpace(lib.NormalizeSpace(htmlquery.InnerText(cell))))
+			rows = append(rows, strings.TrimSpace(htmlquery.InnerText(cell)))
 		}
 		table = append(table, rows)
 	}

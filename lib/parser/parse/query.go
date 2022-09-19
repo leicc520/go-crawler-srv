@@ -45,7 +45,7 @@ func (s *QueryParseSt) InnerText(expr string) (text string, err error) {
 		return
 	}
 	sel.Find("*").RemoveFiltered("style,noscript,script")
-	text = lib.NormalizeSpace(strings.TrimSpace(sel.Text()))
+	text = strings.TrimSpace(sel.Text())
 	return
 }
 
@@ -59,7 +59,7 @@ func (s *QueryParseSt) InnerTexts(expr string) (texts []string, err error) {
 	texts  = make([]string, 0)
 	sel.Find("*").RemoveFiltered("style,noscript,script")
 	f   := func(_ int, tmpSel *goquery.Selection) string {
-		return lib.NormalizeSpace(strings.TrimSpace(tmpSel.Text()))
+		return strings.TrimSpace(tmpSel.Text())
 	}
 	texts = sel.Map(f)
 	return

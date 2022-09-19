@@ -1,0 +1,68 @@
+request:
+  method: GET
+  reg_url:
+    - /sp\?.+seller=[A-Z0-9]{5,}
+  reg_match:
+    - sellerName
+  params:
+  headers:
+    accept-language: en_US,en;q=0.9
+    cookie: session-id=136-2173606-0042214; i18n-prefs=USD; sp-cdn="L5Z9:SG"; ubid-main=133-4371130-6431956; lc-main=en_US; session-token=S25s/P5UswrDX05nVscuiDvFKHbzEY2EW/3utQrRxxp2nKUC271/AG3IWvN1Rqi7IudXQslFfTlkKsbJNSzrBpQo5qpHeWKbZ+dtM3bs98PTh++DDQC+d0UU44r0dmVbTdta7puF88lL8qnxrvHAZw17xAJIis7EMgCvbFbgyuJpltWdpJ/qpavuAG7I1WCq/QI//uH0lnim5aVCb01yNYdPQJB9VMF5; skin=noskin; session-id-time=2082787201l
+dataFields:
+  -
+    tag: language
+    name: 语言
+    regexp:
+      - 'language: "(.+?)"'
+    type: TEXT
+  -
+    tag: seller_name
+    name: 卖家名称
+    xPath:
+      - //*[@id='sellerName']
+      - //*[@id='sellerName-rd']
+    type: TEXT
+  -
+    tag: star
+    name: 卖家星级
+    xPath:
+      - //div[contains(@id, 'seller-feedback-summary')]//i/span
+    type: TEXT
+  -
+    tag: favorite
+    name: 正面评价
+    xPath:
+      - //div[contains(@id, 'seller-feedback-summary')]//a/b
+    type: TEXT
+  -
+    tag: introduce
+    name: 卖家介绍
+    xPath:
+      - //span[@id='about-seller-expanded']
+      - //span[@id='about-seller-text']
+      - //div[@id='spp-expander-about-seller']//div[contains(@class, 'spp-expander-more-content')]
+    type: TEXT
+  -
+    tag: shipping
+    name: 物流规则
+    xPath:
+      - //div[@id='shippingRatesFeature']/p|//*[@id='shipping-policies']
+    type: TEXT
+  -
+    tag: feedback
+    name: 意见反馈
+    xPath:
+      - //table[@id='feedback-summary-table']
+    type: TEXT
+  -
+    tag: information
+    name: 卖家信息
+    xPath:
+      - //div[@id='page-section-detail-seller-info']//div[contains(@class, 'a-row a-spacing-none')]
+    type: TEXT
+  -
+    tag: contact
+    name: 联系电话
+    xPath:
+      - //span[@id='seller-contact-phone']
+    type: TEXT

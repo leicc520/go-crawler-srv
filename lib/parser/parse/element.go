@@ -155,29 +155,20 @@ func (s ElementSt) nodeParse(t IFCompiler) (result interface{}, err error) {
 
 //执行业务逻辑处理情况
 func (s ElementSt) runParse(arrTemps []string, p IFNodeParser) (result interface{}, err error) {
-	arrStr := make([]string, 0) //设置存储组合结果
 	for _, tempStr := range arrTemps {
 		switch s.Type {
 		case ELEMENT_TYPE_TEXT:
 			result, err = p.InnerText(tempStr)
 		case ELEMENT_TYPE_LIST:
 			result, err = p.InnerTexts(tempStr)
-			if err == nil {//数组类型的不允许再做组合
-				return
-			}
 		default:
 			err = ErrType
 			return
 		}
-		if err == nil && result != nil {//得到匹配结果的情况
-			arrStr = append(arrStr, convertString(result))
+		//成功匹配到的话结束处理逻辑
+		if err == nil {
+			break
 		}
-	}
-	if len(arrStr) > 0 { //如果找到的组合的情况逻辑
-		result = arrStr
 	}
 	return
 }
-
-
-

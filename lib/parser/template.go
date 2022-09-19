@@ -1,14 +1,11 @@
 package parser
 
 import (
-	"io/ioutil"
-	"os"
-	"strings"
-
 	"github.com/leicc520/go-crawler-srv/lib/parser/parse"
-	"github.com/leicc520/go-crawler-srv/lib/proxy"
 	"github.com/leicc520/go-orm/log"
 	"gopkg.in/yaml.v2"
+	"io/ioutil"
+	"os"
 )
 
 /*********************************************************************
@@ -26,10 +23,8 @@ type PageInfo struct {
 }
 
 type TemplateSt struct{
-	Method     string            `json:"method"   yaml:"method"`
-	Params     string            `json:"params"   yaml:"params"`
-	Headers    proxy.HeaderSt    `json:"headers"  yaml:"headers"`
-	PageInfo   PageInfo          `json:"pageInfo" yaml:"pageInfo"`
+	Request    *BaseRequest      `json:"request" yaml:"request"`
+	PageInfo   *PageInfo         `json:"pageInfo" yaml:"pageInfo"`
 	DataFields []parse.ElementSt `json:"dataFields" yaml:"dataFields"`
 }
 
@@ -50,9 +45,7 @@ func (s *TemplateSt) LoadFile(confFile string)  error {
 
 //抓取网页数据处理逻辑
 func (s *TemplateSt) Crawling(url string) string {
-	client := proxy.NewHttpRequest().SetHeader(s.Headers.ASMap())
-	method := strings.ToUpper(s.Method)
-	doc, err := client.Request(url, []byte(s.Params), method)
+	doc, err := s.Request.Do(url)
 	if err != nil {
 		return ""
 	}

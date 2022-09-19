@@ -6,7 +6,7 @@ import (
 )
 
 //记录日志，这个动作的内容只记录一次
-func LogActionOnce(action string, v ...interface{}) {
+func LogActionOnce(action string, expire int64, v ...interface{}) {
 	cache := orm.GetMCache()
 	lStr  := "spider@"+Md5Str(action)
 	//缓存中已经存在，则不记录
@@ -14,7 +14,7 @@ func LogActionOnce(action string, v ...interface{}) {
 		return
 	}
 	//相同的内容如果已经记录过了，直接跳过
-	cache.Set(lStr, true, 86400)
+	cache.Set(lStr, true, expire)
 	log.Write(-1, action)
 	log.Write(-1, v...)
 }
